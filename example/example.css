@@ -41,6 +41,11 @@ body {
   padding: 0.25rem;
   text-align: center;
 }
+#siteTitle {
+  color: #fff;
+  font-size: 0.75rem;
+  margin-right: 1rem;
+}
 #topbar button {
   background: none;
   border: 1px solid #fff;
@@ -65,6 +70,150 @@ body {
   padding: 1rem 0.5rem;
   font-size: 0.5rem;
   text-align: center;
+}
+#bottombar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #334d41;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+#bottombar span {
+  color: #fff;
+  font-size: 0.75rem;
+  vertical-align: middle;
+}
+#bottombar button {
+  background: none;
+  border: 1px solid #fff;
+  outline: none;
+  margin: 0;
+  padding: 0.4rem;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+}
+#bottombar button:hover {
+  background-color: #fff;
+  color: #444;
+}
+#bottombar textarea {
+  background: #fff;
+  border: 1px solid #fff;
+  outline: none;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: #333;
+  width: 200px;
+  text-align: center;
+  resize: none;
+  overflow: hidden;
+  min-height: 30px;
+  vertical-align: middle;
+}
+#sidebar {
+  position: fixed;
+  left: 10px;
+  top: 50px;
+  background-color: #334d41;
+  padding: 0.5rem;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-radius: 4px;
+  z-index: 1000;
+}
+#sidebarHandle {
+  background-color: #223328;
+  color: #fff;
+  padding: 0.4rem;
+  margin: 0 -0.5rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+  font-size: 0.7rem;
+  cursor: move;
+  border-radius: 4px 4px 0 0;
+  user-select: none;
+}
+#sidebarCollapseIcon {
+  float: right;
+  cursor: pointer;
+  font-weight: bold;
+}
+#sidebarContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+#sidebarContent.collapsed {
+  display: none;
+}
+.game-mode-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #445d51;
+  margin-bottom: 0.2rem;
+}
+.game-mode-row label {
+  color: #fff;
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.game-mode-row input[type="radio"] {
+  cursor: pointer;
+  margin: 0;
+}
+.hand-row {
+  display: flex;
+  gap: 0.25rem;
+}
+#sidebar textarea {
+  background: #fff;
+  border: 1px solid #fff;
+  outline: none;
+  padding: 0.3rem 0.4rem;
+  font: inherit;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  color: #333;
+  width: 100px;
+  resize: none;
+  overflow: hidden;
+  min-height: 26px;
+}
+#sidebar button {
+  background: none;
+  border: 1px solid #fff;
+  outline: none;
+  padding: 0.3rem 0.4rem;
+  font: inherit;
+  font-size: 0.65rem;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+}
+#sidebar button:hover {
+  background-color: #fff;
+  color: #444;
+}
+#flipHandBtn {
+  width: 100%;
 }
 .card {
   position: absolute;
@@ -365,6 +514,131 @@ body {
 }
 .card.joker.rank3 .face {
   background-image: url("faces/4_3.svg");
+}
+#analysisPanel {
+  position: fixed;
+  right: 10px;
+  top: 50px;
+  background-color: #334d41;
+  padding: 0.5rem;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-radius: 4px;
+  z-index: 1000;
+  min-width: 200px;
+}
+#analysisPanelHandle {
+  background-color: #223328;
+  color: #fff;
+  padding: 0.4rem;
+  margin: 0 -0.5rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+  font-size: 0.7rem;
+  cursor: move;
+  border-radius: 4px 4px 0 0;
+  user-select: none;
+}
+#collapseIcon {
+  float: right;
+  cursor: pointer;
+  font-weight: bold;
+}
+#analysisPanelContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+#analysisPanelContent.collapsed {
+  display: none;
+}
+.analysis-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.analysis-label {
+  color: #fff;
+  font-size: 0.65rem;
+  min-width: 80px;
+}
+.analysis-row label {
+  color: #fff;
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.analysis-row input[type="radio"] {
+  cursor: pointer;
+  margin: 0;
+}
+#missingCardsInput {
+  width: 100%;
+  min-height: 30px;
+  padding: 0.3rem;
+  font: inherit;
+  font-size: 0.6rem;
+  border: 1px solid #fff;
+  border-radius: 2px;
+  resize: none;
+  overflow: hidden;
+}
+#chipsContainer {
+  position: fixed;
+  right: 20px;
+  bottom: 60px;
+  display: flex;
+  gap: 20px;
+  z-index: 2000;
+}
+#highChipsStack,
+#lowChipsStack {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+.chip {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  cursor: grab;
+  user-select: none;
+  z-index: 2000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.chip:active {
+  cursor: grabbing;
+}
+.chip-high {
+  background-color: #d32f2f;
+}
+.chip-low {
+  background-color: #1976d2;
+}
+#highChipsStack .chip:nth-child(1) { top: 0; left: 0; }
+#highChipsStack .chip:nth-child(2) { top: 3px; left: 3px; }
+#highChipsStack .chip:nth-child(3) { top: 6px; left: 6px; }
+#highChipsStack .chip:nth-child(4) { top: 9px; left: 9px; }
+#lowChipsStack .chip:nth-child(1) { top: 0; left: 0; }
+#lowChipsStack .chip:nth-child(2) { top: 3px; left: 3px; }
+#lowChipsStack .chip:nth-child(3) { top: 6px; left: 6px; }
+#lowChipsStack .chip:nth-child(4) { top: 9px; left: 9px; }
+.chip.dragging {
+  position: fixed;
+  z-index: 3000;
 }
 @media (max-width: 540px) {
   #topbar {

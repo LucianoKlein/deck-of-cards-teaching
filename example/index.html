@@ -9,7 +9,70 @@
   </head>
   <body>
     <div id="container"></div>
-    <div id="topbar"></div><a href="https://github.com/pakastin/deck-of-cards"><img class="gh-ribbon" style="position: fixed; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/52760788cde945287fbb584134c4cbc2bc36f904/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png"></a>
+    <div id="topbar"></div>
+    <div id="bottombar">
+      <span>Board:</span>
+      <textarea id="boardInput" placeholder="5c6c7c8c9c" rows="1"></textarea>
+      <button id="rollBoardBtn">Roll the Board</button>
+    </div>
+    <div id="sidebar">
+      <div id="sidebarHandle">Hands <span id="sidebarCollapseIcon">-</span></div>
+      <div id="sidebarContent">
+        <div class="game-mode-row">
+          <label><input type="radio" name="gameMode" value="holdem" /> Hold'em (2)</label>
+          <label><input type="radio" name="gameMode" value="omaha" checked /> Omaha (4)</label>
+          <label><input type="radio" name="gameMode" value="bigo" /> Big O (5)</label>
+        </div>
+        <div class="hand-row"><textarea id="hand1Input" placeholder="AhKhQhJh" rows="1"></textarea><button id="hand1Btn">Hand1</button><button id="roll1Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand2Input" placeholder="AcKcQcJc" rows="1"></textarea><button id="hand2Btn">Hand2</button><button id="roll2Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand3Input" placeholder="AdKdQdJd" rows="1"></textarea><button id="hand3Btn">Hand3</button><button id="roll3Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand4Input" placeholder="AsKsQsJs" rows="1"></textarea><button id="hand4Btn">Hand4</button><button id="roll4Btn">Roll</button></div>
+        <button id="flipHandBtn">Flip Hands</button>
+      </div>
+    </div>
+    <div id="analysisPanel">
+      <div id="analysisPanelHandle">Texture Analysis <span id="collapseIcon">-</span></div>
+      <div id="analysisPanelContent">
+        <div class="analysis-row">
+          <span class="analysis-label">1.有没有对子</span>
+          <label><input type="radio" name="pair" value="yes" /> 有</label>
+          <label><input type="radio" name="pair" value="no" /> 没有</label>
+        </div>
+        <div class="analysis-row">
+          <span class="analysis-label">2.有没有同花</span>
+          <label><input type="radio" name="flush" value="yes" /> 有</label>
+          <label><input type="radio" name="flush" value="no" /> 没有</label>
+        </div>
+        <div class="analysis-row">
+          <span class="analysis-label">3.有没有顺子</span>
+          <label><input type="radio" name="straight" value="yes" /> 有</label>
+          <label><input type="radio" name="straight" value="no" /> 没有</label>
+        </div>
+        <div class="analysis-row" id="straightFlushRow" style="display: none;">
+          <span class="analysis-label">EX:有没有同花顺</span>
+          <label><input type="radio" name="straightFlush" value="yes" /> 有</label>
+          <label><input type="radio" name="straightFlush" value="no" /> 没有</label>
+        </div>
+        <div class="analysis-row" id="missingCardsRow" style="display: none;">
+          <span class="analysis-label">顺子缺张</span>
+          <textarea id="missingCardsInput" placeholder="输入可能的缺张..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div id="chipsContainer">
+      <div id="highChipsStack">
+        <div class="chip chip-high">High</div>
+        <div class="chip chip-high">High</div>
+        <div class="chip chip-high">High</div>
+        <div class="chip chip-high">High</div>
+      </div>
+      <div id="lowChipsStack">
+        <div class="chip chip-low">Low</div>
+        <div class="chip chip-low">Low</div>
+        <div class="chip chip-low">Low</div>
+        <div class="chip chip-low">Low</div>
+      </div>
+    </div>
     <script src="../dist/deck.js"></script>
     <script src="example.js"></script>
   </body>
