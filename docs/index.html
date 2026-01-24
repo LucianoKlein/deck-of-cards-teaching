@@ -27,6 +27,10 @@
         <div class="hand-row"><textarea id="hand2Input" placeholder="AcKcQcJc" rows="1"></textarea><button id="hand2Btn">Hand2</button><button id="roll2Btn">Roll</button></div>
         <div class="hand-row"><textarea id="hand3Input" placeholder="AdKdQdJd" rows="1"></textarea><button id="hand3Btn">Hand3</button><button id="roll3Btn">Roll</button></div>
         <div class="hand-row"><textarea id="hand4Input" placeholder="AsKsQsJs" rows="1"></textarea><button id="hand4Btn">Hand4</button><button id="roll4Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand5Input" placeholder="Th9h8h7h" rows="1"></textarea><button id="hand5Btn">Hand5</button><button id="roll5Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand6Input" placeholder="Tc9c8c7c" rows="1"></textarea><button id="hand6Btn">Hand6</button><button id="roll6Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand7Input" placeholder="Td9d8d7d" rows="1"></textarea><button id="hand7Btn">Hand7</button><button id="roll7Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand8Input" placeholder="Ts9s8s7s" rows="1"></textarea><button id="hand8Btn">Hand8</button><button id="roll8Btn">Roll</button></div>
         <button id="flipHandBtn">Flip Hands</button>
       </div>
     </div>
@@ -37,26 +41,39 @@
           <span class="analysis-label">1.有没有对子</span>
           <label><input type="radio" name="pair" value="yes" /> 有</label>
           <label><input type="radio" name="pair" value="no" /> 没有</label>
+           <span class="analysis-result" data-key="pair"></span>
         </div>
         <div class="analysis-row">
           <span class="analysis-label">2.有没有同花</span>
           <label><input type="radio" name="flush" value="yes" /> 有</label>
           <label><input type="radio" name="flush" value="no" /> 没有</label>
+          <span class="analysis-result" data-key="flush"></span>
         </div>
         <div class="analysis-row">
-          <span class="analysis-label">3.有没有顺子</span>
+          <span class="analysis-label">3.是否能组顺子</span>
           <label><input type="radio" name="straight" value="yes" /> 有</label>
           <label><input type="radio" name="straight" value="no" /> 没有</label>
+          <span class="analysis-result" data-key="straight"></span>
         </div>
         <div class="analysis-row" id="straightFlushRow" style="display: none;">
           <span class="analysis-label">EX:有没有同花顺</span>
           <label><input type="radio" name="straightFlush" value="yes" /> 有</label>
           <label><input type="radio" name="straightFlush" value="no" /> 没有</label>
+          <span class="analysis-result" data-key="straightFlush"></span>
+        </div>
+        <div class="analysis-row" id="straightFlushMissingRow" style="display: none;">
+          <span class="analysis-label">同花顺缺张</span>
+          <textarea style="height: 100px;" id="sfMissingInput" placeholder="输入可能的缺张... 示例：Ac 2d（需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+           <span class="analysis-result" id="sfMissingResult">
+    </span>
         </div>
         <div class="analysis-row" id="missingCardsRow" style="display: none;">
           <span class="analysis-label">顺子缺张</span>
-          <textarea id="missingCardsInput" placeholder="输入可能的缺张..."></textarea>
+          <textarea style="height: 100px;"  id="straightMissingInput" placeholder="输入可能的缺张... 示例：A5 57 Live5（不需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+          <span class="analysis-result" id="straightMissingResult"></span>
         </div>
+        <button id="validateTextureBtn">验证</button>
+        <button id="resetTextureBtn">清空</button>
       </div>
     </div>
     <div id="chipsContainer">

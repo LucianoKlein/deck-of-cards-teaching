@@ -7,6 +7,11 @@ var transform = prefix('transform')
 
 var translate = Deck.translate
 
+var DECK_X = 0
+var BOARD_Y = -140     // 公共牌靠近中线
+var DECK_Y = 240
+
+
 var $container = document.getElementById('container')
 var $topbar = document.getElementById('topbar')
 
@@ -55,7 +60,7 @@ deck.cards.forEach(function (card, i) {
   card.$el.addEventListener('mousedown', onTouch)
   card.$el.addEventListener('touchstart', onTouch)
 
-  function onTouch () {
+  function onTouch() {
     var card
 
     if (i % 13 === 0) {
@@ -98,7 +103,7 @@ deck.cards.forEach(function (card, i) {
   }
 })
 
-function startWinning () {
+function startWinning() {
   var $winningDeck = document.createElement('div')
   $winningDeck.classList.add('deck')
 
@@ -115,7 +120,7 @@ function startWinning () {
   setTimeout(startWinning, Math.round(Math.random() * 1000))
 }
 
-function addWinningCard ($deck, i, side) {
+function addWinningCard($deck, i, side) {
   var card = Deck.Card(54 - i)
   var delay = (55 - i) * 20
   var animationFrames = Deck.animationFrames
@@ -261,15 +266,15 @@ document.addEventListener('touchend', function () {
 })
 
 // Store displayed hand cards for flipping
-var handCards = {
-  hand1: [],
-  hand2: [],
-  hand3: [],
-  hand4: []
+var HAND_COUNT = 8
+
+var handCards = {}
+for (var i = 1; i <= HAND_COUNT; i++) {
+  handCards['hand' + i] = []
 }
 
 // Get current game mode card count
-function getGameModeCardCount () {
+function getGameModeCardCount() {
   var selectedMode = document.querySelector('input[name="gameMode"]:checked')
   if (!selectedMode) return 4 // default to Omaha
   switch (selectedMode.value) {
@@ -286,22 +291,56 @@ function getGameModeCardCount () {
 
 // Hand positions (y offset for each hand row)
 var handPositions = {
-  hand1: { x: -300, y: -180 },
-  hand2: { x: -300, y: 50 },
-  hand3: { x: 300, y: -180 },
-  hand4: { x: 300, y: 50 }
+  // 上排（明显上移 + 拉开中间）
+  hand1: { x: -520, y: -330 },
+  hand2: { x: -180, y: -360 },
+  hand3: { x: 180, y: -360 },
+  hand4: { x: 520, y: -330 },
+
+  // 下排（明显下移 + 拉开中间）
+  hand5: { x: -520, y: 150 },
+  hand6: { x: -180, y: 170 },
+  hand7: { x: 180, y: 170 },
+  hand8: { x: 520, y: 150 }
+
 }
 
-function showHand (handKey, inputElement) {
+
+function showHand(handKey, inputElement) {
   var input = inputElement.value.trim().toLowerCase()
   if (!input) return
 
   var cardCodes = parseCardInput(input)
   if (cardCodes.length === 0) return
 
-  // Clear previous hand cards
-  handCards[handKey] = []
+  // ✅ 先回收旧牌（只清一次）
+  if (handCards[handKey].length > 0) {
+    deck.queue(function (next) {
+      var cardsToReturn = handCards[handKey].slice()
+      handCards[handKey] = []
 
+      cardsToReturn.forEach(function (card, i) {
+        card.animateTo({
+          delay: i * 50,
+          duration: 200,
+          x: 0,
+          y: 0,
+          rot: 0,
+          onStart: function () {
+            card.setSide('back')
+            card.$el.style.zIndex = ''   // ✅ 关键，只在回收时加
+          },
+          onComplete: function () {
+            if (i === cardsToReturn.length - 1) {
+              next()
+            }
+          }
+        })
+      })
+    })
+  }
+
+  // ✅ 再发新牌
   deck.queue(function (next) {
     var fontSize = 16
     var len = deck.cards.length
@@ -337,18 +376,19 @@ function showHand (handKey, inputElement) {
   })
 }
 
-$hand1Btn.addEventListener('click', function () {
-  showHand('hand1', $hand1Input)
-})
-$hand2Btn.addEventListener('click', function () {
-  showHand('hand2', $hand2Input)
-})
-$hand3Btn.addEventListener('click', function () {
-  showHand('hand3', $hand3Input)
-})
-$hand4Btn.addEventListener('click', function () {
-  showHand('hand4', $hand4Input)
-})
+
+for (let i = 1; i <= HAND_COUNT; i++) {
+  let handKey = 'hand' + i
+  let input = document.getElementById(handKey + 'Input')
+  let btn = document.getElementById(handKey + 'Btn')
+
+  if (!btn || !input) continue
+
+  btn.addEventListener('click', function () {
+    showHand(handKey, input)
+  })
+}
+
 
 // Roll buttons
 var $roll1Btn = document.getElementById('roll1Btn')
@@ -360,7 +400,7 @@ var $rollBoardBtn = document.getElementById('rollBoardBtn')
 // Store board cards
 var boardCards = []
 
-function getUsedCardIndices (excludeHandKey) {
+function getUsedCardIndices(excludeHandKey) {
   var used = []
   // Add board cards
   boardCards.forEach(function (card) {
@@ -377,7 +417,7 @@ function getUsedCardIndices (excludeHandKey) {
   return used
 }
 
-function getUsedCardIndicesForBoard () {
+function getUsedCardIndicesForBoard() {
   var used = []
   // Add all hands' cards
   Object.keys(handCards).forEach(function (handKey) {
@@ -388,7 +428,7 @@ function getUsedCardIndicesForBoard () {
   return used
 }
 
-function getRandomCards (count, excludedIndices) {
+function getRandomCards(count, excludedIndices) {
   var available = []
   for (var i = 0; i < 52; i++) {
     if (excludedIndices.indexOf(i) === -1) {
@@ -405,7 +445,7 @@ function getRandomCards (count, excludedIndices) {
   return result
 }
 
-function cardIndexToCode (cardIndex) {
+function cardIndexToCode(cardIndex) {
   var suits = ['s', 'h', 'c', 'd']
   var ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
   var suit = Math.floor(cardIndex / 13)
@@ -413,7 +453,7 @@ function cardIndexToCode (cardIndex) {
   return ranks[rank] + suits[suit]
 }
 
-function rollHand (handKey, inputElement) {
+function rollHand(handKey, inputElement) {
   // First, return old hand cards to deck
   if (handCards[handKey].length > 0) {
     deck.queue(function (next) {
@@ -429,6 +469,7 @@ function rollHand (handKey, inputElement) {
           rot: 0,
           onStart: function () {
             card.setSide('back')
+            card.$el.style.zIndex = ''   // ✅ 关键，只在回收时加
           },
           onComplete: function () {
             if (i === cardsToReturn.length - 1) {
@@ -483,7 +524,7 @@ function rollHand (handKey, inputElement) {
   })
 }
 
-function showHandByIndices (handKey, cardIndices) {
+function showHandByIndices(handKey, cardIndices) {
   if (cardIndices.length === 0) return
 
   // Clear previous hand cards
@@ -524,21 +565,21 @@ function showHandByIndices (handKey, cardIndices) {
   })
 }
 
-$roll1Btn.addEventListener('click', function () {
-  rollHand('hand1', $hand1Input)
-})
-$roll2Btn.addEventListener('click', function () {
-  rollHand('hand2', $hand2Input)
-})
-$roll3Btn.addEventListener('click', function () {
-  rollHand('hand3', $hand3Input)
-})
-$roll4Btn.addEventListener('click', function () {
-  rollHand('hand4', $hand4Input)
-})
+for (let i = 1; i <= HAND_COUNT; i++) {
+  let handKey = 'hand' + i
+  let input = document.getElementById(handKey + 'Input')
+  let rollBtn = document.getElementById('roll' + i + 'Btn')
+
+  if (!rollBtn || !input) continue
+
+  rollBtn.addEventListener('click', function () {
+    rollHand(handKey, input)
+  })
+}
+
 
 $rollBoardBtn.addEventListener('click', function () {
-  // First, return old board cards to deck
+  // ✅ 先回收旧公共牌
   if (boardCards.length > 0) {
     deck.queue(function (next) {
       var cardsToReturn = boardCards.slice()
@@ -553,6 +594,7 @@ $rollBoardBtn.addEventListener('click', function () {
           rot: 0,
           onStart: function () {
             card.setSide('back')
+            card.$el.style.zIndex = ''
           },
           onComplete: function () {
             if (i === cardsToReturn.length - 1) {
@@ -564,13 +606,11 @@ $rollBoardBtn.addEventListener('click', function () {
     })
   }
 
-  // Then deal new cards
+  // ✅ 再发新公共牌
   deck.queue(function (next) {
     var excludedIndices = getUsedCardIndicesForBoard()
     var randomCardIndices = getRandomCards(5, excludedIndices)
-    // Update input field
-    var codes = randomCardIndices.map(cardIndexToCode).join('')
-    $boardInput.value = codes
+    $boardInput.value = randomCardIndices.map(cardIndexToCode).join('')
 
     var fontSize = 16
     var len = deck.cards.length
@@ -582,14 +622,11 @@ $rollBoardBtn.addEventListener('click', function () {
       if (!card) return
 
       boardCards.push(card)
-
-      var delay = i * 250
-
       card.animateTo({
-        delay: delay,
+        delay: i * 250,
         duration: 250,
-        x: Math.round((i - (randomCardIndices.length - 1) / 2) * 80 * fontSize / 16),
-        y: Math.round(-180 * fontSize / 16),
+        x: Math.round((i - 2) * 80 * fontSize / 16),
+        y: BOARD_Y,
         rot: 0,
         onStart: function () {
           card.$el.style.zIndex = len + i
@@ -604,6 +641,47 @@ $rollBoardBtn.addEventListener('click', function () {
     })
   })
 })
+
+
+// Then deal new cards
+// deck.queue(function (next) {
+//   var excludedIndices = getUsedCardIndicesForBoard()
+//   var randomCardIndices = getRandomCards(5, excludedIndices)
+//   // Update input field
+//   var codes = randomCardIndices.map(cardIndexToCode).join('')
+//   $boardInput.value = codes
+
+//   var fontSize = 16
+//   var len = deck.cards.length
+
+//   randomCardIndices.forEach(function (cardIndex, i) {
+//     var card = deck.cards.find(function (c) {
+//       return c.i === cardIndex
+//     })
+//     if (!card) return
+
+//     boardCards.push(card)
+
+//     var delay = i * 250
+
+//     card.animateTo({
+//       delay: delay,
+//       duration: 250,
+//       x: Math.round((i - (randomCardIndices.length - 1) / 2) * 80 * fontSize / 16),
+//       y: Math.round(-180 * fontSize / 16),
+//       rot: 0,
+//       onStart: function () {
+//         card.$el.style.zIndex = len + i
+//       },
+//       onComplete: function () {
+//         card.setSide('front')
+//         if (i === randomCardIndices.length - 1) {
+//           next()
+//         }
+//       }
+//     })
+//   })
+// })
 
 var handsFlippedToFront = false
 
@@ -625,10 +703,33 @@ $board.addEventListener('click', function () {
   var cardCodes = parseCardInput(input)
   if (cardCodes.length === 0) return
 
-  // Clear previous board cards
-  boardCards = []
+  // ✅ 回收旧公共牌
+  if (boardCards.length > 0) {
+    deck.queue(function (next) {
+      var cardsToReturn = boardCards.slice()
+      boardCards = []
 
-  // Show the specified cards directly without shuffling
+      cardsToReturn.forEach(function (card, i) {
+        card.animateTo({
+          delay: i * 50,
+          duration: 200,
+          x: 0,
+          y: 0,
+          onStart: function () {
+            card.setSide('back')
+            card.$el.style.zIndex = ''
+          },
+          onComplete: function () {
+            if (i === cardsToReturn.length - 1) {
+              next()
+            }
+          }
+        })
+      })
+    })
+  }
+
+  // ✅ 发指定公共牌
   deck.queue(function (next) {
     var fontSize = 16
     var len = deck.cards.length
@@ -641,13 +742,11 @@ $board.addEventListener('click', function () {
 
       boardCards.push(card)
 
-      var delay = i * 250
-
       card.animateTo({
-        delay: delay,
+        delay: i * 250,
         duration: 250,
         x: Math.round((i - (cardCodes.length - 1) / 2) * 80 * fontSize / 16),
-        y: Math.round(-180 * fontSize / 16),
+        y: BOARD_Y,
         rot: 0,
         onStart: function () {
           card.$el.style.zIndex = len + i
@@ -663,7 +762,9 @@ $board.addEventListener('click', function () {
   })
 })
 
-function parseCardInput (input) {
+
+
+function parseCardInput(input) {
   // Parse input like "5c6c7c8c9c" or "AhKsQdJcTh"
   var result = []
   var suitMap = { s: 0, h: 1, c: 2, d: 3 }
@@ -703,16 +804,21 @@ function parseCardInput (input) {
 }
 
 deck.mount($container)
+deck.queue(function (next) {
+  deck.shuffle()
+  deck.shuffle()
+  deck.sort()
+  next()
+})
 
-deck.intro()
-deck.sort()
+
 
 // secret message..
 
 var randomDelay = 10000 + 30000 * Math.random()
 
 
-function printMessage (text) {
+function printMessage(text) {
   var animationFrames = Deck.animationFrames
   var ease = Deck.ease
   var $message = document.createElement('p')
@@ -810,24 +916,46 @@ $collapseIcon.addEventListener('click', function (e) {
 })
 
 // Conditional row display
-function updateConditionalRows () {
-  var flushYes = document.querySelector('input[name="flush"][value="yes"]').checked
-  var straightYes = document.querySelector('input[name="straight"][value="yes"]').checked
+function updateConditionalRows() {
+  var flushYes =
+    document.querySelector('input[name="flush"][value="yes"]')?.checked || false
 
-  // Show straight flush row if both straight and flush are "yes"
-  if (straightYes && flushYes) {
+  var straightYes =
+    document.querySelector('input[name="straight"][value="yes"]')?.checked || false
+
+  var straightFlushYes =
+    document.querySelector('input[name="straightFlush"][value="yes"]')?.checked || false
+
+  // DOM
+  var $straightFlushRow = document.getElementById('straightFlushRow')
+  var $straightFlushMissingRow = document.getElementById('straightFlushMissingRow')
+  var $straightMissingRow = document.getElementById('missingCardsRow')
+
+  // 1️⃣ 是否显示「有没有同花顺」
+  if (flushYes && straightYes) {
     $straightFlushRow.style.display = 'flex'
   } else {
     $straightFlushRow.style.display = 'none'
+    $straightFlushMissingRow.style.display = 'none'
   }
 
-  // Show missing cards row if straight is "yes"
-  if (straightYes) {
-    $missingCardsRow.style.display = 'flex'
+  // 2️⃣ 是否显示「同花顺缺张」
+  if (flushYes && straightYes && straightFlushYes) {
+    $straightFlushMissingRow.style.display = 'flex'
   } else {
-    $missingCardsRow.style.display = 'none'
+    $straightFlushMissingRow.style.display = 'none'
+  }
+
+  // ✅ 3️⃣ 是否显示「顺子缺张」（新增的规则）
+  if (straightYes) {
+    $straightMissingRow.style.display = 'flex'
+  } else {
+    $straightMissingRow.style.display = 'none'
   }
 }
+
+
+
 
 // Add event listeners for radio buttons
 document.querySelectorAll('#analysisPanelContent input[type="radio"]').forEach(function (radio) {
@@ -835,24 +963,23 @@ document.querySelectorAll('#analysisPanelContent input[type="radio"]').forEach(f
 })
 
 // Auto-resize textarea
-var $missingCardsInput = document.getElementById('missingCardsInput')
-function autoResizeTextarea (textarea) {
+var $straightMissingInput = document.getElementById('straightMissingInput')
+function autoResizeTextarea(textarea) {
   textarea.style.height = 'auto'
   textarea.style.height = textarea.scrollHeight + 'px'
 }
-function autoResizeMissingCards () {
-  autoResizeTextarea($missingCardsInput)
+function autoResizeMissingCards() {
+  autoResizeTextarea($straightMissingInput)
 }
-$missingCardsInput.addEventListener('input', autoResizeMissingCards)
+$straightMissingInput.addEventListener('input', autoResizeMissingCards)
 
 // Auto-resize board and hand inputs
-var textareaInputs = [
-  $boardInput,
-  $hand1Input,
-  $hand2Input,
-  $hand3Input,
-  $hand4Input
-]
+var textareaInputs = [$boardInput]
+
+for (var i = 1; i <= HAND_COUNT; i++) {
+  var el = document.getElementById('hand' + i + 'Input')
+  if (el) textareaInputs.push(el)
+}
 textareaInputs.forEach(function (textarea) {
   textarea.addEventListener('input', function () {
     autoResizeTextarea(textarea)
@@ -877,7 +1004,7 @@ document.querySelectorAll('.chip').forEach(function (chip) {
   })
 })
 
-function startChipDrag (chip, clientX, clientY) {
+function startChipDrag(chip, clientX, clientY) {
   draggingChip = chip
   var rect = chip.getBoundingClientRect()
   chipOffsetX = clientX - rect.left
@@ -914,3 +1041,384 @@ document.addEventListener('touchend', function () {
     draggingChip = null
   }
 })
+
+
+function analyzeTexture(cardIndices) {
+  if (cardIndices.length < 5) return null
+
+  // rank: 0–12, suit: 0–3
+  var ranks = cardIndices.map(i => i % 13)
+  var suits = cardIndices.map(i => Math.floor(i / 13))
+
+  /* 1️⃣ 有没有对子（公共牌中有两张 rank 相同） */
+  var rankCount = {}
+  ranks.forEach(r => rankCount[r] = (rankCount[r] || 0) + 1)
+  var hasPair = Object.values(rankCount).some(c => c >= 2)
+
+  /* 2️⃣ 有没有同花（三张花色相同即可） */
+  var suitCount = {}
+  suits.forEach(s => suitCount[s] = (suitCount[s] || 0) + 1)
+  var hasFlush = Object.values(suitCount).some(c => c >= 3)
+
+  /* 3️⃣ 能否组成顺子（顺子潜力） */
+  var hasStraight = getStraightWindows(cardIndices).length > 0
+
+  /* 4️⃣ 有没有同花顺（三张：顺子 + 同花） */
+  var hasStraightFlush = false
+  var suitGroups = {}
+
+  cardIndices.forEach(i => {
+    var suit = Math.floor(i / 13)
+    var rank = i % 13
+    if (!suitGroups[suit]) suitGroups[suit] = []
+    suitGroups[suit].push(rank)
+  })
+
+  Object.values(suitGroups).forEach(ranksInSuit => {
+    var r = [...new Set(ranksInSuit)].sort((a, b) => a - b)
+    for (let i = 0; i < r.length - 2; i++) {
+      if (r[i + 2] - r[i] <= 2) {
+        hasStraightFlush = true
+      }
+    }
+  })
+
+  return {
+    hasPair,
+    hasFlush,
+    hasStraight,
+    hasStraightFlush
+  }
+}
+
+function validateRow(key, actualValue) {
+  var selected = document.querySelector(`input[name="${key}"]:checked`)
+  var resultEl = document.querySelector(`.analysis-result[data-key="${key}"]`)
+
+  if (!resultEl) return
+
+  if (!selected) {
+    resultEl.textContent = '未选择'
+    resultEl.className = 'analysis-result'
+    return
+  }
+
+  var userValue = selected.value === 'yes'
+
+  if (userValue === actualValue) {
+    resultEl.textContent = '正确'
+    resultEl.className = 'analysis-result correct'
+  } else {
+    resultEl.textContent = '错误'
+    resultEl.className = 'analysis-result wrong'
+  }
+}
+
+
+document.getElementById('validateTextureBtn').addEventListener('click', function () {
+  var input = document.getElementById('boardInput').value.trim().toLowerCase()
+  if (!input) return
+
+  var cards = parseCardInput(input)
+  if (cards.length < 5) return
+
+  var result = analyzeTexture(cards)
+
+  validateRow('pair', result.hasPair)
+  validateRow('flush', result.hasFlush)
+  validateRow('straight', result.hasStraight)
+  validateRow('straightFlush', result.hasStraightFlush)
+
+  // ✅ 顺子缺张验证（只在用户选择“有顺子”时）
+  var straightYes =
+    document.querySelector('input[name="straight"][value="yes"]')?.checked
+
+  if (straightYes) {
+    const textarea = document.getElementById('straightMissingInput')
+    const userText = textarea.value.trim()
+
+    const straightResult = validateStraightMissing(cards, userText)
+
+    const resultEl = document.getElementById('straightMissingResult')
+
+    if (straightResult.ok) {
+      textarea.classList.remove('wrong')
+      textarea.classList.add('correct')
+
+      resultEl.textContent = '正确'
+      resultEl.className = 'analysis-result correct'
+    } else {
+      textarea.classList.remove('correct')
+      textarea.classList.add('wrong')
+
+      resultEl.textContent =
+        '错误，漏了：' + straightResult.missing.join(' , ')
+      resultEl.className = 'analysis-result wrong'
+    }
+
+  }
+
+  // ✅ 同花顺缺张验证
+  const sfYes =
+    document.querySelector('input[name="straightFlush"][value="yes"]')?.checked
+
+  if (sfYes) {
+    const textarea = document.getElementById('sfMissingInput')
+    const userText = textarea.value.trim()
+
+    const expected = getExpectedStraightFlushMissing(cards)
+    const user = new Set(normalizeUserSFInput(userText))
+
+    const missing = []
+    expected.forEach(e => {
+      if (!user.has(e.toLowerCase())) missing.push(e)
+    })
+
+    const resultEl = document.getElementById('sfMissingResult')
+
+    if (missing.length === 0) {
+      textarea.classList.remove('wrong')
+      textarea.classList.add('correct')
+
+      resultEl.textContent = '正确'
+      resultEl.className = 'analysis-result correct'
+    } else {
+      textarea.classList.remove('correct')
+      textarea.classList.add('wrong')
+
+      resultEl.textContent =
+        '错误，漏了：' + missing.join(' , ')
+      resultEl.className = 'analysis-result wrong'
+    }
+
+  }
+
+
+})
+
+
+function setRadio(name, yes) {
+  var value = yes ? 'yes' : 'no'
+  var el = document.querySelector(`input[name="${name}"][value="${value}"]`)
+  if (el) el.checked = true
+}
+
+const RANK_CHAR_TO_VALUE = {
+  a: 14, k: 13, q: 12, j: 11, t: 10
+}
+
+function cardIndexToRankValue(i) {
+  return (i % 13) + 1
+}
+
+function normalizeBoardRanksWithAce(boardCards) {
+  const set = new Set()
+  boardCards.forEach(i => {
+    const r = cardIndexToRankValue(i)
+    if (r === 1) {
+      set.add(1)
+      set.add(14)
+    } else {
+      set.add(r)
+    }
+  })
+  return [...set]
+}
+
+function getStraightWindows(boardCards) {
+  const ranks = normalizeBoardRanksWithAce(boardCards)
+  const windows = []
+
+  for (let start = 1; start <= 10; start++) {
+    const window = [start, start + 1, start + 2, start + 3, start + 4]
+    const hit = window.filter(r => ranks.includes(r))
+    if (hit.length >= 3) {
+      windows.push({ window, hit })
+    }
+  }
+  return windows
+}
+
+function rankToChar(r) {
+  if (r === 14 || r === 1) return 'A'
+  if (r === 13) return 'K'
+  if (r === 12) return 'Q'
+  if (r === 11) return 'J'
+  if (r === 10) return 'T'
+  return String(r)
+}
+
+function normalizeCombo(a, b) {
+  return [rankToChar(a), rankToChar(b)].sort().join('')
+}
+
+function getExpectedStraightMissingCombos(boardCards) {
+  const windows = getStraightWindows(boardCards)
+  const boardRanks = normalizeBoardRanksWithAce(boardCards)
+  const result = new Set()
+
+  windows.forEach(({ window }) => {
+    const missing = window.filter(r => !boardRanks.includes(r))
+
+    if (missing.length === 2) {
+      result.add(normalizeCombo(missing[0], missing[1]))
+    }
+
+    if (missing.length === 1) {
+      result.add(`LIVE_${rankToChar(missing[0])}`)
+    }
+  })
+
+  return result
+}
+
+function normalizeUserMissingInput(raw) {
+  return raw
+    .toUpperCase()              // ✅ 大小写统一
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(token => {
+      if (token.startsWith('LIVE')) {
+        const num = token.replace(/\D/g, '')
+        return `LIVE_${num}`
+      }
+      return token.split('').sort().join('')
+    })
+}
+
+
+
+function validateStraightMissing(boardCards, userInput) {
+  const expected = getExpectedStraightMissingCombos(boardCards)
+  const user = new Set(normalizeUserMissingInput(userInput))
+
+  const missing = []
+  expected.forEach(e => {
+    if (!user.has(e)) missing.push(e)
+  })
+
+  return {
+    ok: missing.length === 0,
+    expected: [...expected],
+    missing
+  }
+}
+
+function cardIndexToRankSuit(i) {
+  const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
+  const suits = ['s', 'h', 'c', 'd']
+  return ranks[i % 13] + suits[Math.floor(i / 13)]
+}
+
+function getFlushSuitGroups(boardCards) {
+  const map = {}
+  boardCards.forEach(i => {
+    const suit = Math.floor(i / 13)
+    const rank = (i % 13) + 1
+    if (!map[suit]) map[suit] = new Set()
+    map[suit].add(rank === 1 ? 14 : rank) // A 高
+    map[suit].add(rank)
+  })
+  return map
+}
+
+function getExpectedStraightFlushMissing(boardCards) {
+  const suitGroups = getFlushSuitGroups(boardCards)
+  const result = new Set()
+
+  Object.entries(suitGroups).forEach(([suit, ranksSet]) => {
+    const ranks = [...ranksSet]
+
+    for (let start = 1; start <= 10; start++) {
+      const window = [start, start + 1, start + 2, start + 3, start + 4]
+      const hit = window.filter(r => ranks.includes(r))
+
+      if (hit.length >= 3 && hit.length <= 4) {
+        const missing = window.filter(r => !ranks.includes(r))
+        missing.forEach(r => {
+          const rankChar = rankToChar(r)
+          const suitChar = ['s', 'h', 'c', 'd'][suit]
+          result.add(rankChar + suitChar)
+        })
+      }
+    }
+  })
+
+  return result
+}
+
+function resetAnalysisPanel() {
+  // 1️⃣ 清空所有 radio 选择
+  document
+    .querySelectorAll('#analysisPanelContent input[type="radio"]')
+    .forEach(radio => {
+      radio.checked = false
+    })
+
+  // 2️⃣ 清空所有结果文字
+  document
+    .querySelectorAll('.analysis-result')
+    .forEach(el => {
+      el.textContent = ''
+      el.className = 'analysis-result'
+    })
+
+  // 3️⃣ 清空顺子缺张 textarea
+  const straightMissing = document.getElementById('straightMissingInput')
+  if (straightMissing) {
+    straightMissing.value = ''
+    straightMissing.classList.remove('correct', 'wrong')
+    straightMissing.style.height = 'auto'
+  }
+
+  // 4️⃣ 清空同花顺缺张 textarea
+  const sfMissing = document.getElementById('sfMissingInput')
+  if (sfMissing) {
+    sfMissing.value = ''
+    sfMissing.classList.remove('correct', 'wrong')
+    sfMissing.style.height = 'auto'
+  }
+
+  // 5️⃣ 隐藏条件显示的行
+  const straightFlushRow = document.getElementById('straightFlushRow')
+  const straightFlushMissingRow = document.getElementById('straightFlushMissingRow')
+  const straightMissingRow = document.getElementById('missingCardsRow')
+
+  if (straightFlushRow) straightFlushRow.style.display = 'none'
+  if (straightFlushMissingRow) straightFlushMissingRow.style.display = 'none'
+  if (straightMissingRow) straightMissingRow.style.display = 'none'
+  const straightResult = document.getElementById('straightMissingResult')
+  if (straightResult) straightResult.textContent = ''
+
+  const sfResult = document.getElementById('sfMissingResult')
+  if (sfResult) sfResult.textContent = ''
+  straightResult.className = 'analysis-result'
+  sfResult.className = 'analysis-result'
+}
+
+document
+  .getElementById('resetTextureBtn')
+  .addEventListener('click', function () {
+    resetAnalysisPanel()
+  })
+
+
+
+function normalizeUserSFInput(raw) {
+  return raw
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(s => s.trim())
+}
+
+
+
+
+
+
+
+
+
+
+
