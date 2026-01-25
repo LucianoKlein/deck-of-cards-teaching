@@ -11,9 +11,21 @@
     <div id="container"></div>
     <div id="topbar"></div>
     <div id="bottombar">
-      <span>Board:</span>
-      <textarea id="boardInput" placeholder="5c6c7c8c9c" rows="1"></textarea>
-      <button id="rollBoardBtn">Roll the Board</button>
+      <div class="boards-container">
+        <div class="board-row">
+          <span>Board1:</span>
+          <textarea id="boardInput" placeholder="5c6c7c8c9c" rows="1"></textarea>
+          <button id="boardBtn">Board1</button>
+          <button id="rollBoardBtn">Roll the Board1</button>
+        </div>
+        <div class="board-row">
+          <span>Board2:</span>
+          <textarea id="board2Input" placeholder="5c6c7c8c9c" rows="1"></textarea>
+          <button id="board2Btn">Board2</button>
+          <button id="rollBoard2Btn">Roll the Board2</button>
+        </div>
+      </div>
+      <button id="submitBtn" class="submit-btn">SUBMIT</button>
     </div>
     <div id="sidebar">
       <div id="sidebarHandle">Hands <span id="sidebarCollapseIcon">-</span></div>
@@ -22,58 +34,108 @@
           <label><input type="radio" name="gameMode" value="holdem" /> Hold'em (2)</label>
           <label><input type="radio" name="gameMode" value="omaha" checked /> Omaha (4)</label>
           <label><input type="radio" name="gameMode" value="bigo" /> Big O (5)</label>
+          <label><input type="radio" name="gameMode" value="fivecard" /> 5 Card Draw (5)</label>
+          <label><input type="radio" name="gameMode" value="a5lowball" /> A-5 Lowball (5)</label>
+          <label><input type="radio" name="gameMode" value="27lowball" /> 2-7 Lowball (5)</label>
+          <label><input type="radio" name="gameMode" value="badugi" /> Badugi (4)</label>
         </div>
-        <div class="hand-row"><textarea id="hand1Input" placeholder="AhKhQhJh" rows="1"></textarea><button id="hand1Btn">Hand1</button><button id="roll1Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand2Input" placeholder="AcKcQcJc" rows="1"></textarea><button id="hand2Btn">Hand2</button><button id="roll2Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand3Input" placeholder="AdKdQdJd" rows="1"></textarea><button id="hand3Btn">Hand3</button><button id="roll3Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand4Input" placeholder="AsKsQsJs" rows="1"></textarea><button id="hand4Btn">Hand4</button><button id="roll4Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand5Input" placeholder="Th9h8h7h" rows="1"></textarea><button id="hand5Btn">Hand5</button><button id="roll5Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand6Input" placeholder="Tc9c8c7c" rows="1"></textarea><button id="hand6Btn">Hand6</button><button id="roll6Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand7Input" placeholder="Td9d8d7d" rows="1"></textarea><button id="hand7Btn">Hand7</button><button id="roll7Btn">Roll</button></div>
-        <div class="hand-row"><textarea id="hand8Input" placeholder="Ts9s8s7s" rows="1"></textarea><button id="hand8Btn">Hand8</button><button id="roll8Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand1Input" rows="1"></textarea><button id="hand1Btn">Hand1</button><button id="roll1Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand2Input" rows="1"></textarea><button id="hand2Btn">Hand2</button><button id="roll2Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand3Input" rows="1"></textarea><button id="hand3Btn">Hand3</button><button id="roll3Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand4Input" rows="1"></textarea><button id="hand4Btn">Hand4</button><button id="roll4Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand5Input" rows="1"></textarea><button id="hand5Btn">Hand5</button><button id="roll5Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand6Input" rows="1"></textarea><button id="hand6Btn">Hand6</button><button id="roll6Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand7Input" rows="1"></textarea><button id="hand7Btn">Hand7</button><button id="roll7Btn">Roll</button></div>
+        <div class="hand-row"><textarea id="hand8Input" rows="1"></textarea><button id="hand8Btn">Hand8</button><button id="roll8Btn">Roll</button></div>
         <button id="flipHandBtn">Flip Hands</button>
+        <button id="validateHandsBtn">Show Answer</button>
+        <button id="clearMarkingBtn">Clear Marking</button>
       </div>
     </div>
     <div id="analysisPanel">
       <div id="analysisPanelHandle">Texture Analysis <span id="collapseIcon">-</span></div>
       <div id="analysisPanelContent">
-        <div class="analysis-row">
-          <span class="analysis-label">1.有没有对子</span>
-          <label><input type="radio" name="pair" value="yes" /> 有</label>
-          <label><input type="radio" name="pair" value="no" /> 没有</label>
-           <span class="analysis-result" data-key="pair"></span>
+        <!-- Board1 Section -->
+        <div class="analysis-section">
+          <h3 class="section-title">Board1 Analysis</h3>
+          <div class="analysis-row">
+            <span class="analysis-label">1.有没有对子</span>
+            <label><input type="radio" name="board1-pair" value="yes" /> 有</label>
+            <label><input type="radio" name="board1-pair" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board1-pair"></span>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">2.有没有同花</span>
+            <label><input type="radio" name="board1-flush" value="yes" /> 有</label>
+            <label><input type="radio" name="board1-flush" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board1-flush"></span>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">3.是否能组顺子</span>
+            <label><input type="radio" name="board1-straight" value="yes" /> 有</label>
+            <label><input type="radio" name="board1-straight" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board1-straight"></span>
+          </div>
+          <div class="analysis-row" id="board1-straightFlushRow" style="display: none;">
+            <span class="analysis-label">EX:有没有同花顺</span>
+            <label><input type="radio" name="board1-straightFlush" value="yes" /> 有</label>
+            <label><input type="radio" name="board1-straightFlush" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board1-straightFlush"></span>
+          </div>
+          <div class="analysis-row" id="board1-straightFlushMissingRow" style="display: none;">
+            <span class="analysis-label">同花顺缺张</span>
+            <textarea style="height: 100px;" id="board1-sfMissingInput" placeholder="输入可能的缺张... 示例：Ac 2d（需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+            <span class="analysis-result" id="board1-sfMissingResult"></span>
+          </div>
+          <div class="analysis-row" id="board1-missingCardsRow" style="display: none;">
+            <span class="analysis-label">顺子缺张</span>
+            <textarea style="height: 100px;" id="board1-straightMissingInput" placeholder="输入可能的缺张... 示例：A5 57 Live5（不需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+            <span class="analysis-result" id="board1-straightMissingResult"></span>
+          </div>
+          <button id="board1-validateTextureBtn">验证</button>
+          <button id="board1-resetTextureBtn">清空</button>
         </div>
-        <div class="analysis-row">
-          <span class="analysis-label">2.有没有同花</span>
-          <label><input type="radio" name="flush" value="yes" /> 有</label>
-          <label><input type="radio" name="flush" value="no" /> 没有</label>
-          <span class="analysis-result" data-key="flush"></span>
+
+        <!-- Board2 Section -->
+        <div class="analysis-section">
+          <h3 class="section-title">Board2 Analysis</h3>
+          <div class="analysis-row">
+            <span class="analysis-label">1.有没有对子</span>
+            <label><input type="radio" name="board2-pair" value="yes" /> 有</label>
+            <label><input type="radio" name="board2-pair" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board2-pair"></span>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">2.有没有同花</span>
+            <label><input type="radio" name="board2-flush" value="yes" /> 有</label>
+            <label><input type="radio" name="board2-flush" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board2-flush"></span>
+          </div>
+          <div class="analysis-row">
+            <span class="analysis-label">3.是否能组顺子</span>
+            <label><input type="radio" name="board2-straight" value="yes" /> 有</label>
+            <label><input type="radio" name="board2-straight" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board2-straight"></span>
+          </div>
+          <div class="analysis-row" id="board2-straightFlushRow" style="display: none;">
+            <span class="analysis-label">EX:有没有同花顺</span>
+            <label><input type="radio" name="board2-straightFlush" value="yes" /> 有</label>
+            <label><input type="radio" name="board2-straightFlush" value="no" /> 没有</label>
+            <span class="analysis-result" data-key="board2-straightFlush"></span>
+          </div>
+          <div class="analysis-row" id="board2-straightFlushMissingRow" style="display: none;">
+            <span class="analysis-label">同花顺缺张</span>
+            <textarea style="height: 100px;" id="board2-sfMissingInput" placeholder="输入可能的缺张... 示例：Ac 2d（需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+            <span class="analysis-result" id="board2-sfMissingResult"></span>
+          </div>
+          <div class="analysis-row" id="board2-missingCardsRow" style="display: none;">
+            <span class="analysis-label">顺子缺张</span>
+            <textarea style="height: 100px;" id="board2-straightMissingInput" placeholder="输入可能的缺张... 示例：A5 57 Live5（不需要花色，大小写不敏感，空格或回车分隔）"></textarea>
+            <span class="analysis-result" id="board2-straightMissingResult"></span>
+          </div>
+          <button id="board2-validateTextureBtn">验证</button>
+          <button id="board2-resetTextureBtn">清空</button>
         </div>
-        <div class="analysis-row">
-          <span class="analysis-label">3.是否能组顺子</span>
-          <label><input type="radio" name="straight" value="yes" /> 有</label>
-          <label><input type="radio" name="straight" value="no" /> 没有</label>
-          <span class="analysis-result" data-key="straight"></span>
-        </div>
-        <div class="analysis-row" id="straightFlushRow" style="display: none;">
-          <span class="analysis-label">EX:有没有同花顺</span>
-          <label><input type="radio" name="straightFlush" value="yes" /> 有</label>
-          <label><input type="radio" name="straightFlush" value="no" /> 没有</label>
-          <span class="analysis-result" data-key="straightFlush"></span>
-        </div>
-        <div class="analysis-row" id="straightFlushMissingRow" style="display: none;">
-          <span class="analysis-label">同花顺缺张</span>
-          <textarea style="height: 100px;" id="sfMissingInput" placeholder="输入可能的缺张... 示例：Ac 2d（需要花色，大小写不敏感，空格或回车分隔）"></textarea>
-           <span class="analysis-result" id="sfMissingResult">
-    </span>
-        </div>
-        <div class="analysis-row" id="missingCardsRow" style="display: none;">
-          <span class="analysis-label">顺子缺张</span>
-          <textarea style="height: 100px;"  id="straightMissingInput" placeholder="输入可能的缺张... 示例：A5 57 Live5（不需要花色，大小写不敏感，空格或回车分隔）"></textarea>
-          <span class="analysis-result" id="straightMissingResult"></span>
-        </div>
-        <button id="validateTextureBtn">验证</button>
-        <button id="resetTextureBtn">清空</button>
       </div>
     </div>
     <div id="chipsContainer">
@@ -90,7 +152,14 @@
         <div class="chip chip-low">Low</div>
       </div>
     </div>
+    <div id="feedbackOverlay">
+      <div class="feedback-content">
+        <div class="feedback-icon" id="feedbackIcon"></div>
+        <div class="feedback-text" id="feedbackText"></div>
+      </div>
+    </div>
     <script src="./deck.js"></script>
+    <script src="./pokersolver.js"></script>
     <script src="example.js"></script>
   </body>
 </html>

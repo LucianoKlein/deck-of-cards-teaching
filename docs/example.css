@@ -22,6 +22,28 @@ body {
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+#background-layer {
+  position: fixed;
+  width: 4000px;
+  height: 4000px;
+  top: 50%;
+  left: 50%;
+  margin-top: -2000px;
+  margin-left: -2000px;
+  background-color: #45a173;
+  z-index: -1;
+  pointer-events: none;
+  transition: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#background-layer img {
+  width: 2400px;
+  height: auto;
+  object-fit: contain;
+}
 #container {
   position: fixed;
   top: calc(50% + 1.5rem);
@@ -79,14 +101,26 @@ body {
   background-color: #334d41;
   padding: 0.5rem;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+}
+.boards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.board-row {
+  display: flex;
+  align-items: center;
   gap: 0.3rem;
 }
 #bottombar span {
   color: #fff;
   font-size: 0.75rem;
   vertical-align: middle;
+  min-width: 55px;
 }
 #bottombar button {
   background: none;
@@ -104,6 +138,21 @@ body {
 #bottombar button:hover {
   background-color: #fff;
   color: #444;
+}
+.submit-btn {
+  background-color: #d32f2f !important;
+  border: 3px solid #ffffff !important;
+  color: #000000 !important;
+  font-weight: bold;
+  font-size: 1rem !important;
+  padding: 0.6rem 1.2rem !important;
+  cursor: pointer;
+  height: fit-content;
+  align-self: center;
+}
+.submit-btn:hover {
+  background-color: #ff5252 !important;
+  color: #000000 !important;
 }
 #bottombar textarea {
   background: #fff;
@@ -214,6 +263,52 @@ body {
 }
 #flipHandBtn {
   width: 100%;
+}
+#validateHandsBtn {
+  width: 100%;
+  margin-top: 0.3rem;
+}
+#clearMarkingBtn {
+  width: 100%;
+  margin-top: 0.3rem;
+}
+.card.winner-card {
+  box-shadow: 0 0 0 4px #ff0000, 0 0 20px rgba(255, 0, 0, 0.8);
+  transform-origin: center center;
+}
+.high-badge {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #d32f2f;
+  border: 4px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  z-index: 2500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+.low-badge {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #1976d2;
+  border: 4px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  z-index: 2500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  pointer-events: none;
 }
 .card {
   position: absolute;
@@ -550,9 +645,25 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 #analysisPanelContent.collapsed {
   display: none;
+}
+.analysis-section {
+  padding: 0.5rem;
+  border: 1px solid #445d51;
+  border-radius: 4px;
+  background-color: rgba(34, 51, 40, 0.3);
+}
+.section-title {
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #445d51;
 }
 .analysis-row {
   display: flex;
@@ -590,15 +701,15 @@ body {
 }
 #chipsContainer {
   position: fixed;
-  right: 20px;
-  bottom: 60px;
+  /* right and bottom positions are now set in example.js */
   display: flex;
   gap: 20px;
   z-index: 2000;
 }
 #highChipsStack,
 #lowChipsStack {
-  position: relative;
+  position: fixed;
+  /* right and bottom positions are now set in example.js */
   width: 50px;
   height: 50px;
 }
@@ -679,4 +790,124 @@ body {
 
 .analysis-result {
   font-size: 12px;
+}
+
+/* Selection box */
+#selectionBox {
+  position: fixed;
+  border: 2px dashed #fff;
+  background-color: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+}
+
+/* Selected card highlight */
+.card.selected {
+  box-shadow: 0 0 0 3px #ffd700, 0 0 10px rgba(255, 215, 0, 0.8);
+  transform-origin: center center;
+}
+
+/* Panning cursor */
+body.panning {
+  cursor: grabbing !important;
+}
+
+body.space-pressed {
+  cursor: grab !important;
+}
+
+body.space-pressed * {
+  cursor: grab !important;
+}
+
+/* Ctrl key pressed - selection mode */
+body.ctrl-pressed {
+  cursor: crosshair !important;
+}
+
+body.ctrl-pressed * {
+  cursor: crosshair !important;
+}
+
+body.ctrl-pressed .card {
+  cursor: crosshair !important;
+}
+
+/* Feedback overlay */
+#feedbackOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+#feedbackOverlay.show {
+  display: flex;
+}
+
+#feedbackOverlay.hide {
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+.feedback-content {
+  text-align: center;
+  color: #fff;
+}
+
+.feedback-icon {
+  font-size: 8rem;
+  margin-bottom: 1rem;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.feedback-text {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+/* Fireworks effect */
+.firework {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation: fireworkExplode 1s ease-out forwards;
+}
+
+@keyframes fireworkExplode {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty));
+    opacity: 0;
+  }
 }
