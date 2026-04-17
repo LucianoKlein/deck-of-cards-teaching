@@ -4101,7 +4101,7 @@ function generateStraightBoard(type) {
   return cardIndices
 }
 
-function dealGeneratedBoard(cardIndices) {
+function dealGeneratedBoard(cardIndices, alsoRollHands) {
   clearWinnerHighlights()
   clearStraightHighlights()
 
@@ -4125,6 +4125,35 @@ function dealGeneratedBoard(cardIndices) {
         })
       })
     })
+  }
+
+  // recycle all 8 hands if we're going to roll new ones
+  if (alsoRollHands) {
+    for (var h = 1; h <= HAND_COUNT; h++) {
+      var hk = 'hand' + h
+      if (handCards[hk].length > 0) {
+        ;(function (handKey) {
+          deck.queue(function (next) {
+            var cardsToReturn = handCards[handKey].slice()
+            handCards[handKey] = []
+            cardsToReturn.forEach(function (card, i) {
+              card.animateTo({
+                delay: i * 30,
+                duration: 150,
+                x: 0, y: 0, rot: 0,
+                onStart: function () {
+                  card.setSide('back')
+                  card.$el.style.zIndex = ''
+                },
+                onComplete: function () {
+                  if (i === cardsToReturn.length - 1) next()
+                }
+              })
+            })
+          })
+        })(hk)
+      }
+    }
   }
 
   // deal new board
@@ -4157,6 +4186,121 @@ function dealGeneratedBoard(cardIndices) {
       })
     })
   })
+
+  // deal straight-relevant hands for all 8 positions
+  if (alsoRollHands) {
+    deck.queue(function (next) {
+      var mode = getStraightMode()
+      var cardCount = getGameModeCardCount()
+      var boardIdxSet = new Set(cardIndices)
+      var combos = findStraightCombinations(cardIndices, mode)
+
+      var usedByHands = new Set()
+
+      for (var hi = 1; hi <= HAND_COUNT; hi++) {
+        var handKey = 'hand' + hi
+        var handIndices = generateStraightHand(cardIndices, combos, cardCount, mode, boardIdxSet, usedByHands)
+
+        handIndices.forEach(function (idx) { usedByHands.add(idx) })
+
+        var inputEl = document.getElementById(handKey + 'Input')
+        if (inputEl) inputEl.value = handIndices.map(cardIndexToCode).join('')
+
+        var fontSize = 16
+        var len = deck.cards.length
+        var pos = handPositions[handKey]
+
+        handCards[handKey] = []
+        handIndices.forEach(function (cardIndex, i) {
+          var card = deck.cards.find(function (c) { return c.i === cardIndex })
+          if (!card) return
+          handCards[handKey].push(card)
+          card.handKey = handKey
+
+          card.animateTo({
+            delay: (hi - 1) * 200 + i * 100,
+            duration: 200,
+            x: pos.x + (pos.dx || -1) * i * HAND_CARD_SPACING_X * fontSize / 16,
+            y: pos.y + (pos.dy || 1) * i * HAND_CARD_SPACING_Y * fontSize / 16,
+            rot: 0,
+            onStart: function () {
+              card.$el.style.zIndex = len + i
+              card.setSide('back')
+            },
+            onComplete: function () {}
+          })
+        })
+      }
+
+      setTimeout(next, HAND_COUNT * 200 + 400)
+    })
+  }
+}
+
+function generateStraightHand(boardIndices, combos, cardCount, mode, boardIdxSet, usedByHands) {
+  function shuffleArr(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  var allMissingRanks = []
+  combos.forEach(function (combo) {
+    combo.missing.forEach(function (r) {
+      if (allMissingRanks.indexOf(r) === -1) allMissingRanks.push(r)
+    })
+  })
+  shuffleArr(allMissingRanks)
+
+  // also add ranks adjacent to board ranks as "draw-ish" candidates
+  var boardRankSet = new Set()
+  boardIndices.forEach(function (idx) {
+    var r = (idx % 13) + 1
+    boardRankSet.add(r === 1 ? 14 : r)
+    if (r === 1) boardRankSet.add(1)
+  })
+  var nearRanks = []
+  boardRankSet.forEach(function (r) {
+    if (r - 1 >= 2 && !boardRankSet.has(r - 1) && allMissingRanks.indexOf(r - 1) === -1) nearRanks.push(r - 1)
+    if (r + 1 <= 14 && !boardRankSet.has(r + 1) && allMissingRanks.indexOf(r + 1) === -1) nearRanks.push(r + 1)
+  })
+  shuffleArr(nearRanks)
+
+  var candidateRanks = allMissingRanks.concat(nearRanks)
+
+  function findCardForRank(targetRank, excluded) {
+    var suits = shuffleArr([0, 1, 2, 3])
+    var rank = targetRank === 14 ? 1 : targetRank
+    for (var si = 0; si < suits.length; si++) {
+      var idx = suits[si] * 13 + (rank - 1)
+      if (!boardIdxSet.has(idx) && !usedByHands.has(idx) && excluded.indexOf(idx) === -1) {
+        return idx
+      }
+    }
+    return -1
+  }
+
+  var handIndices = []
+
+  // fill from candidate ranks first
+  for (var ci = 0; ci < candidateRanks.length && handIndices.length < cardCount; ci++) {
+    var idx = findCardForRank(candidateRanks[ci], handIndices)
+    if (idx !== -1) handIndices.push(idx)
+  }
+
+  // fill remaining with random cards
+  var attempts = 0
+  while (handIndices.length < cardCount && attempts < 200) {
+    attempts++
+    var randIdx = Math.floor(Math.random() * 52)
+    if (!boardIdxSet.has(randIdx) && !usedByHands.has(randIdx) && handIndices.indexOf(randIdx) === -1) {
+      handIndices.push(randIdx)
+    }
+  }
+
+  return handIndices
 }
 
 document.getElementById('straightGenBtn').addEventListener('click', function () {
@@ -4169,7 +4313,7 @@ document.getElementById('straightGenBtn').addEventListener('click', function () 
     attempts++
   }
   if (!cardIndices) return
-  dealGeneratedBoard(cardIndices)
+  dealGeneratedBoard(cardIndices, true)
 })
 
 
@@ -4193,7 +4337,7 @@ var caAvailableIndices = []
 var caNameRevealed = false
 
 var RANK_NAMES = {
-  1: 'Ace', 2: 'Deuce', 3: 'Three', 4: 'Four', 5: 'Five',
+  1: 'Ace', 2: 'Deuce', 3: 'Trey', 4: 'Four', 5: 'Five',
   6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten',
   11: 'Jack', 12: 'Queen', 13: 'King'
 }
