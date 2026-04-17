@@ -86,6 +86,7 @@ var $bysuit = document.createElement('button')
 var $fan = document.createElement('button')
 var $poker = document.createElement('button')
 var $flip = document.createElement('button')
+var $straightTraining = document.createElement('button')
 
 $shuffle.textContent = 'Shuffle'
 $sort.textContent = 'Sort'
@@ -93,6 +94,7 @@ $bysuit.textContent = 'By suit'
 $fan.textContent = 'Fan'
 $poker.textContent = 'Poker'
 $flip.textContent = 'Flip'
+$straightTraining.textContent = '顺子特训'
 
 var $title = document.createElement('span')
 $title.textContent = 'REG Poker Academy 教学系统'
@@ -105,6 +107,7 @@ $topbar.appendChild($bysuit)
 $topbar.appendChild($fan)
 $topbar.appendChild($poker)
 $topbar.appendChild($sort)
+$topbar.appendChild($straightTraining)
 
 var $bottombar = document.getElementById('bottombar')
 
@@ -3083,7 +3086,7 @@ function isCardElement(element) {
 // Check if clicking on UI elements
 function isUIElement(element) {
   if (!element) return false
-  var uiIds = ['topbar', 'bottombar', 'sidebar', 'analysisPanel', 'chipsContainer']
+  var uiIds = ['topbar', 'bottombar', 'sidebar', 'analysisPanel', 'chipsContainer', 'straightTrainingPanel']
   for (var i = 0; i < uiIds.length; i++) {
     if (element.id === uiIds[i] || (element.parentElement && element.parentElement.id === uiIds[i])) {
       return true
@@ -3503,9 +3506,668 @@ document.addEventListener('touchend', function(e) {
 })
 
 
+// ============================================
+// Straight Training Mode
+// ============================================
+var $straightTrainingPanel = document.getElementById('straightTrainingPanel')
+var $straightTrainingHandle = document.getElementById('straightTrainingHandle')
+var $straightTrainingContent = document.getElementById('straightTrainingContent')
+var $straightTrainingCollapseIcon = document.getElementById('straightTrainingCollapseIcon')
+var $numberLine = document.getElementById('numberLine')
+var $straightCombos = document.getElementById('straightCombos')
+var $straightTypeInfo = document.getElementById('straightTypeInfo')
+var straightTrainingVisible = false
 
+$straightTraining.addEventListener('click', function () {
+  straightTrainingVisible = !straightTrainingVisible
+  if (straightTrainingVisible) {
+    $straightTrainingPanel.classList.add('show')
+    updateStraightTraining()
+  } else {
+    $straightTrainingPanel.classList.remove('show')
+    clearStraightHighlights()
+  }
+})
 
+$straightTrainingCollapseIcon.addEventListener('click', function (e) {
+  e.stopPropagation()
+  if ($straightTrainingContent.classList.contains('collapsed')) {
+    $straightTrainingContent.classList.remove('collapsed')
+    $straightTrainingCollapseIcon.textContent = '-'
+  } else {
+    $straightTrainingContent.classList.add('collapsed')
+    $straightTrainingCollapseIcon.textContent = '+'
+  }
+})
 
+// Dragging for straight training panel
+var isStraightDragging = false
+var straightDragOffsetX = 0
+var straightDragOffsetY = 0
+
+$straightTrainingHandle.addEventListener('mousedown', function (e) {
+  if (e.target === $straightTrainingCollapseIcon) return
+  isStraightDragging = true
+  straightDragOffsetX = e.clientX - $straightTrainingPanel.offsetLeft
+  straightDragOffsetY = e.clientY - $straightTrainingPanel.offsetTop
+  e.preventDefault()
+})
+
+$straightTrainingHandle.addEventListener('touchstart', function (e) {
+  if (e.target === $straightTrainingCollapseIcon) return
+  isStraightDragging = true
+  var touch = e.touches[0]
+  straightDragOffsetX = touch.clientX - $straightTrainingPanel.offsetLeft
+  straightDragOffsetY = touch.clientY - $straightTrainingPanel.offsetTop
+  e.preventDefault()
+})
+
+document.addEventListener('mousemove', function (e) {
+  if (!isStraightDragging) return
+  $straightTrainingPanel.style.left = (e.clientX - straightDragOffsetX) + 'px'
+  $straightTrainingPanel.style.top = (e.clientY - straightDragOffsetY) + 'px'
+  $straightTrainingPanel.style.right = 'auto'
+  $straightTrainingPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('touchmove', function (e) {
+  if (!isStraightDragging) return
+  var touch = e.touches[0]
+  $straightTrainingPanel.style.left = (touch.clientX - straightDragOffsetX) + 'px'
+  $straightTrainingPanel.style.top = (touch.clientY - straightDragOffsetY) + 'px'
+  $straightTrainingPanel.style.right = 'auto'
+  $straightTrainingPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('mouseup', function () {
+  isStraightDragging = false
+})
+
+document.addEventListener('touchend', function () {
+  isStraightDragging = false
+})
+
+// Listen for mode changes
+document.querySelectorAll('input[name="straightMode"]').forEach(function (radio) {
+  radio.addEventListener('change', function () {
+    updateStraightTraining()
+  })
+})
+
+function getStraightMode() {
+  var checked = document.querySelector('input[name="straightMode"]:checked')
+  return checked ? checked.value : 'holdem'
+}
+
+function clearStraightHighlights() {
+  deck.cards.forEach(function (card) {
+    card.$el.classList.remove('straight-highlight')
+  })
+}
+
+function getBoardRanksFromInput() {
+  var input = document.getElementById('boardInput').value.trim().toLowerCase()
+  if (!input) return null
+  var cardIndices = parseCardInput(input)
+  if (cardIndices.length < 3) return null
+  return cardIndices
+}
+
+function rankValueToChar(v) {
+  if (v === 14 || v === 1) return 'A'
+  if (v === 13) return 'K'
+  if (v === 12) return 'Q'
+  if (v === 11) return 'J'
+  if (v === 10) return 'T'
+  return String(v)
+}
+
+function findStraightCombinations(boardCardIndices, mode) {
+  var boardRanks = []
+  boardCardIndices.forEach(function (idx) {
+    var r = (idx % 13) + 1
+    if (r === 1) {
+      boardRanks.push({ rank: 14, idx: idx })
+      boardRanks.push({ rank: 1, idx: idx })
+    } else {
+      boardRanks.push({ rank: r, idx: idx })
+    }
+  })
+
+  var boardRankSet = new Set()
+  boardRanks.forEach(function (br) { boardRankSet.add(br.rank) })
+
+  var results = []
+
+  for (var start = 1; start <= 10; start++) {
+    var window = [start, start + 1, start + 2, start + 3, start + 4]
+    var onBoard = []
+    var missing = []
+
+    window.forEach(function (r) {
+      if (boardRankSet.has(r)) {
+        onBoard.push(r)
+      } else {
+        missing.push(r)
+      }
+    })
+
+    if (mode === 'holdem') {
+      if (onBoard.length >= 3 && missing.length <= 2) {
+        results.push({
+          window: window,
+          onBoard: onBoard,
+          missing: missing,
+          start: start
+        })
+      }
+    } else {
+      if (onBoard.length >= 3 && missing.length <= 2) {
+        results.push({
+          window: window,
+          onBoard: onBoard,
+          missing: missing,
+          start: start
+        })
+      }
+    }
+  }
+
+  return results
+}
+
+function classifyBoardStraightType(boardCardIndices) {
+  var boardRankSet = new Set()
+  boardCardIndices.forEach(function (idx) {
+    var r = (idx % 13) + 1
+    if (r === 1) {
+      boardRankSet.add(14)
+      boardRankSet.add(1)
+    } else {
+      boardRankSet.add(r)
+    }
+  })
+
+  var ranks = []
+  boardRankSet.forEach(function (r) { if (r >= 2) ranks.push(r) })
+  if (boardRankSet.has(1)) ranks.push(14)
+  ranks.sort(function (a, b) { return a - b })
+
+  var consecutiveGroups = []
+  var current = [ranks[0]]
+  for (var i = 1; i < ranks.length; i++) {
+    if (ranks[i] === current[current.length - 1] + 1) {
+      current.push(ranks[i])
+    } else {
+      consecutiveGroups.push(current)
+      current = [ranks[i]]
+    }
+  }
+  consecutiveGroups.push(current)
+
+  var maxConsecutive = 0
+  consecutiveGroups.forEach(function (g) {
+    if (g.length > maxConsecutive) maxConsecutive = g.length
+  })
+
+  var numCards = boardCardIndices.length
+
+  if (numCards >= 5 && maxConsecutive >= 5) {
+    return '第三大类：板上5张顺牌（连续）'
+  }
+  if (numCards >= 4 && maxConsecutive >= 4) {
+    return '第二大类：板上4张顺牌（连续）'
+  }
+  if (numCards >= 4) {
+    var found4WithGap = false
+    for (var s = 1; s <= 10; s++) {
+      var w = [s, s + 1, s + 2, s + 3, s + 4]
+      var hit = 0
+      w.forEach(function (r) { if (boardRankSet.has(r)) hit++ })
+      if (hit >= 4) { found4WithGap = true; break }
+    }
+    if (found4WithGap && maxConsecutive < 4) {
+      return '第二大类：板上4张顺牌（有间隔）'
+    }
+  }
+  if (maxConsecutive >= 3) {
+    return '第一大类：板上3张顺牌（连续）'
+  }
+
+  var found3InWindow = false
+  for (var s2 = 1; s2 <= 10; s2++) {
+    var w2 = [s2, s2 + 1, s2 + 2, s2 + 3, s2 + 4]
+    var hit2 = 0
+    w2.forEach(function (r) { if (boardRankSet.has(r)) hit2++ })
+    if (hit2 >= 3) { found3InWindow = true; break }
+  }
+  if (found3InWindow) {
+    return '第一大类：板上3张顺牌（有间隔）'
+  }
+
+  return '板面无顺子潜力'
+}
+
+function buildNumberLine(boardCardIndices, highlightRanks) {
+  $numberLine.innerHTML = ''
+  var labels = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+  var values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+  var boardRankSet = new Set()
+  if (boardCardIndices) {
+    boardCardIndices.forEach(function (idx) {
+      var r = (idx % 13) + 1
+      if (r === 1) {
+        boardRankSet.add(1)
+        boardRankSet.add(14)
+      } else {
+        boardRankSet.add(r)
+      }
+    })
+  }
+
+  var neededSet = new Set()
+  if (highlightRanks) {
+    highlightRanks.forEach(function (r) { neededSet.add(r) })
+  }
+
+  for (var i = 0; i < labels.length; i++) {
+    var cell = document.createElement('div')
+    cell.className = 'nl-cell'
+    cell.textContent = labels[i]
+    if (boardRankSet.has(values[i])) {
+      cell.classList.add('on-board')
+    }
+    if (neededSet.has(values[i])) {
+      cell.classList.add('needed')
+    }
+    $numberLine.appendChild(cell)
+  }
+}
+
+function buildCombosDisplay(combos, boardCardIndices, mode) {
+  $straightCombos.innerHTML = ''
+
+  var boardRankSet = new Set()
+  boardCardIndices.forEach(function (idx) {
+    var r = (idx % 13) + 1
+    if (r === 1) {
+      boardRankSet.add(1)
+      boardRankSet.add(14)
+    } else {
+      boardRankSet.add(r)
+    }
+  })
+
+  combos.forEach(function (combo) {
+    var row = document.createElement('div')
+    row.className = 'straight-combo-row'
+
+    var allValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    var allLabels = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+
+    allValues.forEach(function (v, idx) {
+      var cell = document.createElement('div')
+      cell.className = 'combo-cell'
+
+      if (combo.window.indexOf(v) !== -1) {
+        cell.textContent = allLabels[idx]
+        if (combo.onBoard.indexOf(v) !== -1) {
+          cell.classList.add('board-card')
+        } else {
+          cell.classList.add('need-card')
+        }
+      } else {
+        cell.classList.add('empty-cell')
+        cell.textContent = ''
+      }
+      row.appendChild(cell)
+    })
+
+    var label = document.createElement('span')
+    label.className = 'combo-label'
+
+    if (combo.missing.length === 0) {
+      label.innerHTML = '<span style="color:#2ecc71">板上已成顺</span>'
+    } else if (combo.missing.length === 1) {
+      var needChar = rankValueToChar(combo.missing[0])
+      if (mode === 'holdem') {
+        label.innerHTML = '需 <span class="need-text">' + needChar + '</span>'
+      } else {
+        label.innerHTML = '需 <span class="need-text">' + needChar + '</span> + 手牌1张'
+      }
+    } else {
+      var needChars = combo.missing.map(rankValueToChar)
+      if (mode === 'holdem') {
+        label.innerHTML = '需 <span class="need-text">' + needChars.join(' ') + '</span>'
+      } else {
+        label.innerHTML = '需 <span class="need-text">' + needChars.join(' ') + '</span> (手牌至少含2张)'
+      }
+    }
+
+    row.appendChild(label)
+
+    row.addEventListener('mouseenter', function () {
+      var allNeeded = new Set()
+      combo.missing.forEach(function (r) { allNeeded.add(r) })
+      buildNumberLine(boardCardIndices, allNeeded)
+    })
+
+    row.addEventListener('mouseleave', function () {
+      buildNumberLine(boardCardIndices, null)
+    })
+
+    $straightCombos.appendChild(row)
+  })
+}
+
+function updateStraightTraining() {
+  if (!straightTrainingVisible) return
+
+  var boardInput = document.getElementById('boardInput').value.trim().toLowerCase()
+  if (!boardInput) {
+    $straightTypeInfo.textContent = '请先输入 Board1 公共牌'
+    $numberLine.innerHTML = ''
+    $straightCombos.innerHTML = ''
+    clearStraightHighlights()
+    return
+  }
+
+  var boardCardIndices = parseCardInput(boardInput)
+  if (boardCardIndices.length < 3) {
+    $straightTypeInfo.textContent = '至少需要3张公共牌'
+    $numberLine.innerHTML = ''
+    $straightCombos.innerHTML = ''
+    clearStraightHighlights()
+    return
+  }
+
+  var mode = getStraightMode()
+  var typeInfo = classifyBoardStraightType(boardCardIndices)
+  $straightTypeInfo.textContent = typeInfo
+
+  buildNumberLine(boardCardIndices, null)
+
+  var combos = findStraightCombinations(boardCardIndices, mode)
+  buildCombosDisplay(combos, boardCardIndices, mode)
+
+  clearStraightHighlights()
+  boardCards.forEach(function (card) {
+    var r = (card.i % 13) + 1
+    var isInAnyStraightWindow = false
+    combos.forEach(function (combo) {
+      var checkRank = r === 1 ? 14 : r
+      if (combo.onBoard.indexOf(checkRank) !== -1) {
+        isInAnyStraightWindow = true
+      }
+      if (r === 1 && combo.onBoard.indexOf(1) !== -1) {
+        isInAnyStraightWindow = true
+      }
+    })
+    if (isInAnyStraightWindow) {
+      card.$el.classList.add('straight-highlight')
+    }
+  })
+}
+
+// Auto-update when board changes
+$board.addEventListener('click', function () {
+  setTimeout(updateStraightTraining, 100)
+})
+
+$rollBoardBtn.addEventListener('click', function () {
+  setTimeout(function () {
+    updateStraightTraining()
+  }, 2000)
+})
+
+// Also update when board input changes manually
+$boardInput.addEventListener('input', function () {
+  if (straightTrainingVisible) {
+    setTimeout(updateStraightTraining, 200)
+  }
+})
+
+// ============================================
+// Straight Training - Board Generation
+// ============================================
+function generateStraightBoard(type) {
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  function rangeArray(from, to) {
+    var a = []
+    for (var i = from; i <= to; i++) a.push(i)
+    return a
+  }
+
+  function countStraightWindows(rankSet) {
+    var count = 0
+    for (var s = 1; s <= 10; s++) {
+      var hit = 0
+      for (var k = 0; k < 5; k++) { if (rankSet.has(s + k)) hit++ }
+      if (hit >= 3) count++
+    }
+    return count
+  }
+
+  function pickSafeFillers(coreRanks, count) {
+    var coreSet = new Set(coreRanks)
+    var baseWindows = countStraightWindows(coreSet)
+
+    var candidates = rangeArray(2, 14).filter(function (r) { return !coreSet.has(r) })
+    shuffleArray(candidates)
+
+    var result = []
+    for (var i = 0; i < candidates.length && result.length < count; i++) {
+      var testSet = new Set(coreRanks.concat(result).concat([candidates[i]]))
+      if (countStraightWindows(testSet) === baseWindows) {
+        result.push(candidates[i])
+      }
+    }
+    // fallback: if strict filter fails, just pick distant ranks
+    if (result.length < count) {
+      var minR = Math.min.apply(null, coreRanks)
+      var maxR = Math.max.apply(null, coreRanks)
+      var fallback = rangeArray(2, 14).filter(function (r) {
+        return !coreSet.has(r) && result.indexOf(r) === -1
+      })
+      fallback.sort(function (a, b) {
+        var da = Math.min(Math.abs(a - minR), Math.abs(a - maxR))
+        var db = Math.min(Math.abs(b - minR), Math.abs(b - maxR))
+        return db - da
+      })
+      while (result.length < count && fallback.length > 0) {
+        result.push(fallback.shift())
+      }
+    }
+    return result
+  }
+
+  function pickCoreRanks(type) {
+    var allStarts, w, combos, picked
+    if (type === '3conn') {
+      allStarts = shuffleArray(rangeArray(2, 12))
+      var core3 = [allStarts[0], allStarts[0]+1, allStarts[0]+2]
+      return core3.concat(pickSafeFillers(core3, 2))
+    }
+    if (type === '3gap1') {
+      allStarts = shuffleArray(rangeArray(1, 10))
+      for (var i1 = 0; i1 < allStarts.length; i1++) {
+        w = rangeArray(allStarts[i1], allStarts[i1]+4)
+        combos = combosWithGap(w, 3, 1)
+        if (combos.length > 0) {
+          picked = combos[Math.floor(Math.random() * combos.length)]
+          return picked.concat(pickSafeFillers(picked, 2))
+        }
+      }
+      return null
+    }
+    if (type === '3gap2') {
+      allStarts = shuffleArray(rangeArray(1, 10))
+      for (var i2 = 0; i2 < allStarts.length; i2++) {
+        w = rangeArray(allStarts[i2], allStarts[i2]+4)
+        combos = combosWithGap(w, 3, 2)
+        if (combos.length > 0) {
+          picked = combos[Math.floor(Math.random() * combos.length)]
+          return picked.concat(pickSafeFillers(picked, 2))
+        }
+      }
+      return null
+    }
+    if (type === '4conn') {
+      allStarts = shuffleArray(rangeArray(2, 11))
+      var core4 = rangeArray(allStarts[0], allStarts[0]+3)
+      return core4.concat(pickSafeFillers(core4, 1))
+    }
+    if (type === '4gap1') {
+      allStarts = shuffleArray(rangeArray(1, 10))
+      for (var i4 = 0; i4 < allStarts.length; i4++) {
+        w = rangeArray(allStarts[i4], allStarts[i4]+4)
+        var removeIdx = 1 + Math.floor(Math.random() * 3)
+        var core4g = w.slice()
+        core4g.splice(removeIdx, 1)
+        return core4g.concat(pickSafeFillers(core4g, 1))
+      }
+      return null
+    }
+    if (type === '5conn') {
+      allStarts = shuffleArray(rangeArray(2, 10))
+      return rangeArray(allStarts[0], allStarts[0]+4)
+    }
+    return null
+  }
+
+  function combosWithGap(window, n, exactMissing) {
+    var results = []
+    function combine(start, chosen) {
+      if (chosen.length === n) {
+        var s = chosen.slice().sort(function(a,b){return a-b})
+        var missing = (s[n-1] - s[0]) - (n - 1)
+        if (missing === exactMissing) results.push(s)
+        return
+      }
+      for (var i = start; i < window.length; i++) {
+        chosen.push(window[i])
+        combine(i+1, chosen)
+        chosen.pop()
+      }
+    }
+    combine(0, [])
+    shuffleArray(results)
+    return results
+  }
+
+  var ranks = pickCoreRanks(type)
+  if (!ranks || ranks.length < 5) return null
+
+  // check no duplicate ranks
+  var rankSet = new Set()
+  for (var ri = 0; ri < ranks.length; ri++) {
+    if (rankSet.has(ranks[ri])) return null
+    rankSet.add(ranks[ri])
+  }
+
+  // assign suits: guarantee no 3+ of same suit
+  var allSuits = [0, 1, 2, 3]
+  shuffleArray(allSuits)
+  var suitPool = [allSuits[0], allSuits[1], allSuits[2], allSuits[3], allSuits[Math.floor(Math.random()*4)]]
+  shuffleArray(suitPool)
+
+  var sc = {}
+  suitPool.forEach(function(s) { sc[s] = (sc[s]||0) + 1 })
+  var flush = false
+  Object.keys(sc).forEach(function(k) { if (sc[k] >= 3) flush = true })
+  if (flush) {
+    shuffleArray(allSuits)
+    suitPool = [allSuits[0], allSuits[0], allSuits[1], allSuits[1], allSuits[2]]
+    shuffleArray(suitPool)
+  }
+
+  var cardIndices = []
+  for (var i = 0; i < 5; i++) {
+    var rank = ranks[i]
+    if (rank === 14) rank = 1
+    cardIndices.push(suitPool[i] * 13 + (rank - 1))
+  }
+  return cardIndices
+}
+
+function dealGeneratedBoard(cardIndices) {
+  clearWinnerHighlights()
+  clearStraightHighlights()
+
+  // recycle old board
+  if (boardCards.length > 0) {
+    deck.queue(function (next) {
+      var cardsToReturn = boardCards.slice()
+      boardCards = []
+      cardsToReturn.forEach(function (card, i) {
+        card.animateTo({
+          delay: i * 50,
+          duration: 200,
+          x: 0, y: 0, rot: 0,
+          onStart: function () {
+            card.setSide('back')
+            card.$el.style.zIndex = ''
+          },
+          onComplete: function () {
+            if (i === cardsToReturn.length - 1) next()
+          }
+        })
+      })
+    })
+  }
+
+  // deal new board
+  deck.queue(function (next) {
+    $boardInput.value = cardIndices.map(cardIndexToCode).join('')
+    var fontSize = 16
+    var len = deck.cards.length
+
+    cardIndices.forEach(function (cardIndex, i) {
+      var card = deck.cards.find(function (c) { return c.i === cardIndex })
+      if (!card) return
+      boardCards.push(card)
+      card.isBoardCard = true
+      card.boardIndex = i
+
+      card.animateTo({
+        delay: i * 250,
+        duration: 250,
+        x: BOARD_X + Math.round((i - 2) * 80 * fontSize / 16),
+        y: BOARD_Y,
+        rot: 0,
+        onStart: function () { card.$el.style.zIndex = len + i },
+        onComplete: function () {
+          card.setSide('front')
+          if (i === cardIndices.length - 1) {
+            next()
+            setTimeout(updateStraightTraining, 100)
+          }
+        }
+      })
+    })
+  })
+}
+
+document.getElementById('straightGenBtn').addEventListener('click', function () {
+  var type = document.getElementById('straightGenType').value
+  var attempts = 0
+  var cardIndices = null
+  while (attempts < 50) {
+    cardIndices = generateStraightBoard(type)
+    if (cardIndices) break
+    attempts++
+  }
+  if (!cardIndices) return
+  dealGeneratedBoard(cardIndices)
+})
 
 
 

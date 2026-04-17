@@ -158,6 +158,36 @@
         <div class="feedback-text" id="feedbackText"></div>
       </div>
     </div>
+    <div id="straightTrainingPanel">
+      <div id="straightTrainingHandle">顺子特训 <span id="straightTrainingCollapseIcon">-</span></div>
+      <div id="straightTrainingContent">
+        <div class="straight-mode-row">
+          <label><input type="radio" name="straightMode" value="holdem" checked /> Hold'em</label>
+          <label><input type="radio" name="straightMode" value="omaha" /> Omaha</label>
+        </div>
+        <div class="straight-generate-row">
+          <span class="straight-gen-label">生成类型：</span>
+          <select id="straightGenType">
+            <option value="3conn">3张连续</option>
+            <option value="3gap1">3张隔1</option>
+            <option value="3gap2">3张隔2</option>
+            <option value="4conn">4张连续</option>
+            <option value="4gap1">4张缺1</option>
+            <option value="5conn">5张连续</option>
+          </select>
+          <button id="straightGenBtn">生成</button>
+        </div>
+        <div class="straight-info">
+          <div id="straightTypeInfo"></div>
+        </div>
+        <div class="number-line-container">
+          <div id="numberLine"></div>
+        </div>
+        <div class="straight-combos-container">
+          <div id="straightCombos"></div>
+        </div>
+      </div>
+    </div>
     <script src="./deck.js"></script>
     <script src="./pokersolver.js"></script>
     <script src="example.js"></script>
