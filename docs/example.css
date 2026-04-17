@@ -1127,3 +1127,96 @@ body.ctrl-pressed .card {
 .card.straight-highlight {
   box-shadow: 0 0 0 3px #1976d2, 0 0 15px rgba(25, 118, 210, 0.7);
 }
+
+/* Card Announcement Panel */
+#cardAnnouncementPanel {
+  position: fixed;
+  left: 10px;
+  bottom: 80px;
+  background-color: #334d41;
+  padding: 0.5rem;
+  padding-top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-radius: 4px;
+  z-index: 1000;
+  min-width: 280px;
+}
+#cardAnnouncementPanel.show {
+  display: flex;
+}
+#cardAnnouncementHandle {
+  background-color: #223328;
+  color: #fff;
+  padding: 0.4rem;
+  margin: 0 -0.5rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+  font-size: 0.7rem;
+  cursor: move;
+  border-radius: 4px 4px 0 0;
+  user-select: none;
+}
+#cardAnnouncementCollapseIcon {
+  float: right;
+  cursor: pointer;
+  font-weight: bold;
+}
+#cardAnnouncementContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+#cardAnnouncementContent.collapsed {
+  display: none;
+}
+.ca-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.ca-buttons button {
+  background: #1976d2;
+  color: #fff;
+  border: 1px solid #42a5f5;
+  padding: 0.5rem;
+  font-size: 0.65rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.ca-buttons button:hover:not(:disabled) {
+  background: #1565c0;
+}
+.ca-buttons button:disabled {
+  background: #555;
+  border-color: #666;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+#caResetBtn {
+  background: #d32f2f;
+  border-color: #f44336;
+}
+#caResetBtn:hover {
+  background: #c62828;
+}
+.ca-card-name {
+  color: #ffd700;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  min-height: 2rem;
+  padding: 0.5rem;
+  background-color: rgba(34, 51, 40, 0.5);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ca-counter {
+  color: #ccc;
+  font-size: 0.6rem;
+  text-align: center;
+}

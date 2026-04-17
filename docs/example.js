@@ -87,6 +87,7 @@ var $fan = document.createElement('button')
 var $poker = document.createElement('button')
 var $flip = document.createElement('button')
 var $straightTraining = document.createElement('button')
+var $cardAnnouncement = document.createElement('button')
 
 $shuffle.textContent = 'Shuffle'
 $sort.textContent = 'Sort'
@@ -95,6 +96,7 @@ $fan.textContent = 'Fan'
 $poker.textContent = 'Poker'
 $flip.textContent = 'Flip'
 $straightTraining.textContent = '顺子特训'
+$cardAnnouncement.textContent = 'Card Announce'
 
 var $title = document.createElement('span')
 $title.textContent = 'REG Poker Academy 教学系统'
@@ -108,6 +110,7 @@ $topbar.appendChild($fan)
 $topbar.appendChild($poker)
 $topbar.appendChild($sort)
 $topbar.appendChild($straightTraining)
+$topbar.appendChild($cardAnnouncement)
 
 var $bottombar = document.getElementById('bottombar')
 
@@ -3086,7 +3089,7 @@ function isCardElement(element) {
 // Check if clicking on UI elements
 function isUIElement(element) {
   if (!element) return false
-  var uiIds = ['topbar', 'bottombar', 'sidebar', 'analysisPanel', 'chipsContainer', 'straightTrainingPanel']
+  var uiIds = ['topbar', 'bottombar', 'sidebar', 'analysisPanel', 'chipsContainer', 'straightTrainingPanel', 'cardAnnouncementPanel']
   for (var i = 0; i < uiIds.length; i++) {
     if (element.id === uiIds[i] || (element.parentElement && element.parentElement.id === uiIds[i])) {
       return true
@@ -4170,5 +4173,181 @@ document.getElementById('straightGenBtn').addEventListener('click', function () 
 })
 
 
+// ============================================
+// Card Announcement Mode
+// ============================================
+var $caPanel = document.getElementById('cardAnnouncementPanel')
+var $caHandle = document.getElementById('cardAnnouncementHandle')
+var $caContent = document.getElementById('cardAnnouncementContent')
+var $caCollapseIcon = document.getElementById('cardAnnouncementCollapseIcon')
+var $caDealBtn = document.getElementById('caDealBtn')
+var $caShowBtn = document.getElementById('caShowBtn')
+var $caResetBtn = document.getElementById('caResetBtn')
+var $caCardName = document.getElementById('caCardName')
+var $caCounter = document.getElementById('caCounter')
 
+var caVisible = false
+var caCurrentCard = null
+var caDealtCards = []
+var caAvailableIndices = []
+var caNameRevealed = false
+
+var RANK_NAMES = {
+  1: 'Ace', 2: 'Deuce', 3: 'Three', 4: 'Four', 5: 'Five',
+  6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten',
+  11: 'Jack', 12: 'Queen', 13: 'King'
+}
+var SUIT_NAMES = { 0: 'Spades', 1: 'Hearts', 2: 'Clubs', 3: 'Diamonds' }
+
+function caGetCardName(cardIndex) {
+  var rank = (cardIndex % 13) + 1
+  var suit = Math.floor(cardIndex / 13)
+  return RANK_NAMES[rank] + ' of ' + SUIT_NAMES[suit]
+}
+
+function caResetDeck() {
+  // return all dealt cards to deck
+  if (caDealtCards.length > 0) {
+    deck.queue(function (next) {
+      var toReturn = caDealtCards.slice()
+      caDealtCards = []
+      caCurrentCard = null
+      toReturn.forEach(function (card, i) {
+        card.animateTo({
+          delay: i * 30,
+          duration: 200,
+          x: 0, y: 0, rot: 0,
+          onStart: function () {
+            card.setSide('back')
+            card.$el.style.zIndex = ''
+          },
+          onComplete: function () {
+            if (i === toReturn.length - 1) next()
+          }
+        })
+      })
+    })
+  }
+  caAvailableIndices = []
+  for (var i = 0; i < 52; i++) caAvailableIndices.push(i)
+  caNameRevealed = false
+  $caCardName.textContent = ''
+  $caShowBtn.disabled = true
+  $caDealBtn.disabled = false
+  $caCounter.textContent = '0 / 52'
+}
+
+function caDealOne() {
+  if (caAvailableIndices.length === 0) return
+
+  var randIdx = Math.floor(Math.random() * caAvailableIndices.length)
+  var cardIndex = caAvailableIndices[randIdx]
+  caAvailableIndices.splice(randIdx, 1)
+
+  caNameRevealed = false
+  $caCardName.textContent = '???'
+  $caShowBtn.disabled = false
+  $caDealBtn.disabled = true
+
+  var fontSize = 16
+  var len = deck.cards.length
+
+  deck.queue(function (next) {
+    var card = deck.cards.find(function (c) { return c.i === cardIndex })
+    if (!card) { next(); return }
+
+    caCurrentCard = card
+    caDealtCards.push(card)
+
+    card.animateTo({
+      delay: 0,
+      duration: 300,
+      x: BOARD_X,
+      y: BOARD_Y,
+      rot: 0,
+      onStart: function () {
+        card.$el.style.zIndex = len + caDealtCards.length
+      },
+      onComplete: function () {
+        card.setSide('front')
+        next()
+      }
+    })
+  })
+
+  $caCounter.textContent = (52 - caAvailableIndices.length) + ' / 52'
+}
+
+function caShowName() {
+  if (!caCurrentCard || caNameRevealed) return
+  caNameRevealed = true
+  $caCardName.textContent = caGetCardName(caCurrentCard.i)
+  $caShowBtn.disabled = true
+  $caDealBtn.disabled = caAvailableIndices.length === 0
+}
+
+$cardAnnouncement.addEventListener('click', function () {
+  caVisible = !caVisible
+  if (caVisible) {
+    $caPanel.classList.add('show')
+    caResetDeck()
+  } else {
+    $caPanel.classList.remove('show')
+  }
+})
+
+$caCollapseIcon.addEventListener('click', function (e) {
+  e.stopPropagation()
+  if ($caContent.classList.contains('collapsed')) {
+    $caContent.classList.remove('collapsed')
+    $caCollapseIcon.textContent = '-'
+  } else {
+    $caContent.classList.add('collapsed')
+    $caCollapseIcon.textContent = '+'
+  }
+})
+
+$caDealBtn.addEventListener('click', caDealOne)
+$caShowBtn.addEventListener('click', caShowName)
+$caResetBtn.addEventListener('click', caResetDeck)
+
+// Dragging
+var isCaDragging = false
+var caDragOffsetX = 0
+var caDragOffsetY = 0
+
+$caHandle.addEventListener('mousedown', function (e) {
+  if (e.target === $caCollapseIcon) return
+  isCaDragging = true
+  caDragOffsetX = e.clientX - $caPanel.offsetLeft
+  caDragOffsetY = e.clientY - $caPanel.offsetTop
+  e.preventDefault()
+})
+
+$caHandle.addEventListener('touchstart', function (e) {
+  if (e.target === $caCollapseIcon) return
+  isCaDragging = true
+  var touch = e.touches[0]
+  caDragOffsetX = touch.clientX - $caPanel.offsetLeft
+  caDragOffsetY = touch.clientY - $caPanel.offsetTop
+  e.preventDefault()
+})
+
+document.addEventListener('mousemove', function (e) {
+  if (!isCaDragging) return
+  $caPanel.style.left = (e.clientX - caDragOffsetX) + 'px'
+  $caPanel.style.top = (e.clientY - caDragOffsetY) + 'px'
+  $caPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('touchmove', function (e) {
+  if (!isCaDragging) return
+  var touch = e.touches[0]
+  $caPanel.style.left = (touch.clientX - caDragOffsetX) + 'px'
+  $caPanel.style.top = (touch.clientY - caDragOffsetY) + 'px'
+  $caPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('mouseup', function () { isCaDragging = false })
+document.addEventListener('touchend', function () { isCaDragging = false })
 
