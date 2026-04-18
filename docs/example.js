@@ -4197,9 +4197,27 @@ function dealGeneratedBoard(cardIndices, alsoRollHands) {
 
       var usedByHands = new Set()
 
+      // assign hand "roles" randomly:
+      // ~2 hands get made straight (both missing cards)
+      // ~3 hands get a draw (1 of 2 missing cards, or 1 missing card for gutshot)
+      // ~3 hands get near-miss / random (adjacent ranks or pure random)
+      var roles = []
+      var madeCount = 1 + Math.floor(Math.random() * 2)   // 1-2 made
+      var drawCount = 2 + Math.floor(Math.random() * 2)    // 2-3 draws
+      var weakCount = HAND_COUNT - madeCount - drawCount    // rest are weak/random
+      for (var ri = 0; ri < madeCount; ri++) roles.push('made')
+      for (var di = 0; di < drawCount; di++) roles.push('draw')
+      for (var wi = 0; wi < weakCount; wi++) roles.push('weak')
+      // shuffle roles so strong hands aren't always in position 1-2
+      for (var si = roles.length - 1; si > 0; si--) {
+        var sj = Math.floor(Math.random() * (si + 1))
+        var tmp = roles[si]; roles[si] = roles[sj]; roles[sj] = tmp
+      }
+
       for (var hi = 1; hi <= HAND_COUNT; hi++) {
         var handKey = 'hand' + hi
-        var handIndices = generateStraightHand(cardIndices, combos, cardCount, mode, boardIdxSet, usedByHands)
+        var role = roles[hi - 1]
+        var handIndices = generateStraightHandByRole(cardIndices, combos, cardCount, mode, boardIdxSet, usedByHands, role)
 
         handIndices.forEach(function (idx) { usedByHands.add(idx) })
 
@@ -4237,7 +4255,7 @@ function dealGeneratedBoard(cardIndices, alsoRollHands) {
   }
 }
 
-function generateStraightHand(boardIndices, combos, cardCount, mode, boardIdxSet, usedByHands) {
+function generateStraightHandByRole(boardIndices, combos, cardCount, mode, boardIdxSet, usedByHands, role) {
   function shuffleArr(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1))
@@ -4245,30 +4263,6 @@ function generateStraightHand(boardIndices, combos, cardCount, mode, boardIdxSet
     }
     return arr
   }
-
-  var allMissingRanks = []
-  combos.forEach(function (combo) {
-    combo.missing.forEach(function (r) {
-      if (allMissingRanks.indexOf(r) === -1) allMissingRanks.push(r)
-    })
-  })
-  shuffleArr(allMissingRanks)
-
-  // also add ranks adjacent to board ranks as "draw-ish" candidates
-  var boardRankSet = new Set()
-  boardIndices.forEach(function (idx) {
-    var r = (idx % 13) + 1
-    boardRankSet.add(r === 1 ? 14 : r)
-    if (r === 1) boardRankSet.add(1)
-  })
-  var nearRanks = []
-  boardRankSet.forEach(function (r) {
-    if (r - 1 >= 2 && !boardRankSet.has(r - 1) && allMissingRanks.indexOf(r - 1) === -1) nearRanks.push(r - 1)
-    if (r + 1 <= 14 && !boardRankSet.has(r + 1) && allMissingRanks.indexOf(r + 1) === -1) nearRanks.push(r + 1)
-  })
-  shuffleArr(nearRanks)
-
-  var candidateRanks = allMissingRanks.concat(nearRanks)
 
   function findCardForRank(targetRank, excluded) {
     var suits = shuffleArr([0, 1, 2, 3])
@@ -4282,22 +4276,99 @@ function generateStraightHand(boardIndices, combos, cardCount, mode, boardIdxSet
     return -1
   }
 
-  var handIndices = []
-
-  // fill from candidate ranks first
-  for (var ci = 0; ci < candidateRanks.length && handIndices.length < cardCount; ci++) {
-    var idx = findCardForRank(candidateRanks[ci], handIndices)
-    if (idx !== -1) handIndices.push(idx)
+  function fillRandom(hand, count) {
+    var attempts = 0
+    while (hand.length < count && attempts < 200) {
+      attempts++
+      var r = Math.floor(Math.random() * 52)
+      if (!boardIdxSet.has(r) && !usedByHands.has(r) && hand.indexOf(r) === -1) {
+        hand.push(r)
+      }
+    }
   }
 
-  // fill remaining with random cards
-  var attempts = 0
-  while (handIndices.length < cardCount && attempts < 200) {
-    attempts++
-    var randIdx = Math.floor(Math.random() * 52)
-    if (!boardIdxSet.has(randIdx) && !usedByHands.has(randIdx) && handIndices.indexOf(randIdx) === -1) {
-      handIndices.push(randIdx)
+  // shuffle combos so we don't always pick the highest/lowest straight
+  var shuffledCombos = combos.slice()
+  shuffleArr(shuffledCombos)
+
+  var handIndices = []
+
+  if (role === 'made') {
+    // pick a random combo and fill ALL its missing ranks -> completes a straight
+    // prefer combos with exactly 2 missing (holdem can fill both)
+    // but also allow 1-missing combos for variety
+    var candidates = shuffledCombos.filter(function (c) {
+      return c.missing.length > 0 && c.missing.length <= cardCount
+    })
+    if (candidates.length === 0) candidates = shuffledCombos.slice()
+
+    var picked = candidates[Math.floor(Math.random() * candidates.length)]
+    if (picked) {
+      picked.missing.forEach(function (r) {
+        if (handIndices.length < cardCount) {
+          var idx = findCardForRank(r, handIndices)
+          if (idx !== -1) handIndices.push(idx)
+        }
+      })
     }
+    fillRandom(handIndices, cardCount)
+
+  } else if (role === 'draw') {
+    // pick a random combo, fill only 1 of its missing ranks -> has a draw but not made
+    var drawCandidates = shuffledCombos.filter(function (c) {
+      return c.missing.length >= 1
+    })
+    if (drawCandidates.length === 0) drawCandidates = shuffledCombos.slice()
+
+    var drawPicked = drawCandidates[Math.floor(Math.random() * drawCandidates.length)]
+    if (drawPicked && drawPicked.missing.length > 0) {
+      // pick just 1 of the missing ranks
+      var oneRank = drawPicked.missing[Math.floor(Math.random() * drawPicked.missing.length)]
+      var idx = findCardForRank(oneRank, handIndices)
+      if (idx !== -1) handIndices.push(idx)
+    }
+    // fill rest with cards that are NOT completing any straight
+    var allMissing = new Set()
+    combos.forEach(function (c) {
+      c.missing.forEach(function (r) { allMissing.add(r) })
+    })
+    var attempts = 0
+    while (handIndices.length < cardCount && attempts < 300) {
+      attempts++
+      var r = Math.floor(Math.random() * 52)
+      if (!boardIdxSet.has(r) && !usedByHands.has(r) && handIndices.indexOf(r) === -1) {
+        var rk = (r % 13) + 1
+        if (rk === 1) rk = 14
+        // avoid putting in another missing rank that would complete a different straight
+        if (!allMissing.has(rk) || Math.random() < 0.3) {
+          handIndices.push(r)
+        }
+      }
+    }
+    fillRandom(handIndices, cardCount)
+
+  } else {
+    // 'weak' — near-miss or random, no straight completion
+    // maybe 1 adjacent rank for flavor, rest random
+    var boardRankSet = new Set()
+    boardIndices.forEach(function (idx) {
+      var r = (idx % 13) + 1
+      boardRankSet.add(r === 1 ? 14 : r)
+      if (r === 1) boardRankSet.add(1)
+    })
+    var nearRanks = []
+    boardRankSet.forEach(function (r) {
+      if (r - 1 >= 2 && !boardRankSet.has(r - 1)) nearRanks.push(r - 1)
+      if (r + 1 <= 14 && !boardRankSet.has(r + 1)) nearRanks.push(r + 1)
+    })
+    shuffleArr(nearRanks)
+
+    // 50% chance to include one adjacent rank for "looks like it could be something"
+    if (nearRanks.length > 0 && Math.random() < 0.5) {
+      var idx = findCardForRank(nearRanks[0], handIndices)
+      if (idx !== -1) handIndices.push(idx)
+    }
+    fillRandom(handIndices, cardCount)
   }
 
   return handIndices
