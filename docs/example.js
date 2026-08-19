@@ -4612,9 +4612,13 @@ function getCurrentGameMode() {
 // Refresh preset select dropdown
 function refreshPresetSelect() {
   var currentMode = getCurrentGameMode()
+  console.log('[PRESET] Refreshing presets for mode:', currentMode)
+
   var filteredPresets = firestorePresets.filter(function(p) {
     return p.gameMode === currentMode
   })
+
+  console.log('[PRESET] Filtered presets:', filteredPresets.length, filteredPresets)
 
   $presetSelect.innerHTML = '<option value="">-- 选择预设 --</option>'
   filteredPresets.forEach(function(preset) {
@@ -4806,6 +4810,9 @@ $importPresetsBtn.addEventListener('click', function() {
 // Game mode change handler
 var gameModeSelect = document.getElementById('gameModeSelect')
 if (gameModeSelect) {
-  gameModeSelect.addEventListener('change', refreshPresetSelect)
+  gameModeSelect.addEventListener('change', function() {
+    console.log('[PRESET] Game mode changed to:', this.value)
+    refreshPresetSelect()
+  })
 }
 
