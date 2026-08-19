@@ -1220,3 +1220,100 @@ body.ctrl-pressed .card {
   font-size: 0.6rem;
   text-align: center;
 }
+
+/* Preset styles */
+.preset-row {
+  padding: 0.8rem;
+  background-color: rgba(34, 51, 40, 0.3);
+  border-radius: 4px;
+  margin-bottom: 0.8rem;
+}
+
+.preset-row label {
+  display: block;
+  color: #ddd;
+  font-size: 0.75rem;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.preset-row select {
+  width: 100%;
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background-color: #2a2a2a;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.preset-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.preset-buttons button {
+  padding: 0.4rem;
+  font-size: 0.65rem;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid;
+  font-weight: bold;
+}
+
+.preset-buttons button:hover {
+  opacity: 0.9;
+}
+
+#loadPresetBtn {
+  background: #1976d2;
+  color: #fff;
+  border-color: #42a5f5;
+}
+
+#loadPresetBtn:hover {
+  background: #1565c0;
+}
+
+.save-btn {
+  background: #4CAF50;
+  color: #fff;
+  border-color: #66BB6A;
+}
+
+.save-btn:hover {
+  background: #45a049;
+}
+
+.delete-btn {
+  background: #d32f2f;
+  color: #fff;
+  border-color: #f44336;
+}
+
+.delete-btn:hover {
+  background: #c62828;
+}
+
+.export-btn {
+  background: #FF9800;
+  color: #fff;
+  border-color: #FFB74D;
+}
+
+.export-btn:hover {
+  background: #F57C00;
+}
+
+.import-btn {
+  background: #9C27B0;
+  color: #fff;
+  border-color: #BA68C8;
+}
+
+.import-btn:hover {
+  background: #7B1FA2;
+}
+

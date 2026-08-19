@@ -4566,3 +4566,250 @@ document.addEventListener('touchmove', function (e) {
 document.addEventListener('mouseup', function () { isCaDragging = false })
 document.addEventListener('touchend', function () { isCaDragging = false })
 
+// ============================================
+// Preset Management System
+// ============================================
+
+var $presetSelect = document.getElementById('presetSelect')
+var $loadPresetBtn = document.getElementById('loadPresetBtn')
+var $savePresetBtn = document.getElementById('savePresetBtn')
+var $deletePresetBtn = document.getElementById('deletePresetBtn')
+var $exportPresetsBtn = document.getElementById('exportPresetsBtn')
+var $importPresetsBtn = document.getElementById('importPresetsBtn')
+
+// Firestore integration
+var firebaseReady = false
+var loadPresetsFromFirestore = null
+var savePresetToFirestore = null
+var deletePresetFromFirestore = null
+var firestorePresets = []
+
+// Listen for Firebase ready event
+window.addEventListener('firebaseReady', function(e) {
+  console.log('[PRESET] Firebase ready event received')
+  firebaseReady = true
+  loadPresetsFromFirestore = e.detail.loadPresetsFromFirestore
+  savePresetToFirestore = e.detail.savePresetToFirestore
+  deletePresetFromFirestore = e.detail.deletePresetFromFirestore
+
+  // Load presets from Firestore
+  loadPresetsFromFirestore().then(function(presets) {
+    console.log('[PRESET] Loaded from Firestore:', presets.length)
+    firestorePresets = presets
+    refreshPresetSelect()
+  })
+})
+
+// Get current game mode
+function getCurrentGameMode() {
+  var radios = document.getElementsByName('gameMode')
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) {
+      return radios[i].value
+    }
+  }
+  return 'omaha'
+}
+
+// PRESET_PLACEHOLDER
+
+// Refresh preset select dropdown
+function refreshPresetSelect() {
+  var currentMode = getCurrentGameMode()
+  var filteredPresets = firestorePresets.filter(function(p) {
+    return p.gameMode === currentMode
+  })
+
+  $presetSelect.innerHTML = '<option value="">-- 选择预设 --</option>'
+  filteredPresets.forEach(function(preset) {
+    var option = document.createElement('option')
+    option.value = preset.id
+    option.textContent = preset.name
+    $presetSelect.appendChild(option)
+  })
+}
+
+// Capture current state
+function captureCurrentState() {
+  var state = {
+    gameMode: getCurrentGameMode(),
+    board1: $boardInput.value,
+    board2: $board2Input.value,
+    hands: []
+  }
+
+  for (var i = 1; i <= 8; i++) {
+    var input = document.getElementById('hand' + i + 'Input')
+    if (input) {
+      state.hands.push(input.value)
+    }
+  }
+
+  return state
+}
+
+// Apply state to UI
+function applyState(state) {
+  if (!state) return
+
+  // Set game mode
+  var radios = document.getElementsByName('gameMode')
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].value === state.gameMode) {
+      radios[i].checked = true
+      break
+    }
+  }
+
+  // Set boards
+  $boardInput.value = state.board1 || ''
+  $board2Input.value = state.board2 || ''
+
+  // Set hands
+  for (var i = 0; i < state.hands.length && i < 8; i++) {
+    var input = document.getElementById('hand' + (i + 1) + 'Input')
+    if (input) {
+      input.value = state.hands[i] || ''
+    }
+  }
+}
+
+// PRESET_PLACEHOLDER2
+
+// Load preset
+$loadPresetBtn.addEventListener('click', function() {
+  var presetId = $presetSelect.value
+  if (!presetId) {
+    alert('请先选择一个预设')
+    return
+  }
+
+  var preset = firestorePresets.find(function(p) { return p.id === presetId })
+  if (preset) {
+    applyState(preset.state)
+    alert('预设已加载：' + preset.name)
+  }
+})
+
+// Save preset
+$savePresetBtn.addEventListener('click', function() {
+  if (!firebaseReady) {
+    alert('Firebase 未就绪，请稍后再试')
+    return
+  }
+
+  var name = prompt('输入预设名称:')
+  if (!name) return
+
+  var state = captureCurrentState()
+
+  savePresetToFirestore(name, state).then(function(newPreset) {
+    firestorePresets.push(newPreset)
+    refreshPresetSelect()
+    alert('预设已保存：' + name)
+  }).catch(function(err) {
+    alert('保存失败：' + err.message)
+  })
+})
+
+// Delete preset
+$deletePresetBtn.addEventListener('click', function() {
+  var presetId = $presetSelect.value
+  if (!presetId) {
+    alert('请先选择一个预设')
+    return
+  }
+
+  var preset = firestorePresets.find(function(p) { return p.id === presetId })
+  if (!preset) return
+
+  if (!confirm('确定要删除预设 "' + preset.name + '" 吗？')) return
+
+  deletePresetFromFirestore(presetId).then(function() {
+    firestorePresets = firestorePresets.filter(function(p) { return p.id !== presetId })
+    refreshPresetSelect()
+    alert('预设已删除')
+  }).catch(function(err) {
+    alert('删除失败：' + err.message)
+  })
+})
+
+// PRESET_PLACEHOLDER3
+
+// Export presets
+$exportPresetsBtn.addEventListener('click', function() {
+  var currentMode = getCurrentGameMode()
+  var filteredPresets = firestorePresets.filter(function(p) {
+    return p.gameMode === currentMode
+  })
+
+  if (filteredPresets.length === 0) {
+    alert('当前游戏模式没有预设可导出')
+    return
+  }
+
+  var dataStr = JSON.stringify(filteredPresets, null, 2)
+  var dataBlob = new Blob([dataStr], { type: 'application/json' })
+  var url = URL.createObjectURL(dataBlob)
+  var link = document.createElement('a')
+  link.href = url
+  link.download = 'presets-' + currentMode + '.json'
+  link.click()
+  URL.revokeObjectURL(url)
+})
+
+// Import presets
+$importPresetsBtn.addEventListener('click', function() {
+  if (!firebaseReady) {
+    alert('Firebase 未就绪，请稍后再试')
+    return
+  }
+
+  var input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json'
+
+  input.onchange = function(e) {
+    var file = e.target.files[0]
+    if (!file) return
+
+    var reader = new FileReader()
+    reader.onload = function(event) {
+      try {
+        var presets = JSON.parse(event.target.result)
+
+        if (!Array.isArray(presets)) {
+          throw new Error('Invalid format')
+        }
+
+        var promises = presets.map(function(preset) {
+          return savePresetToFirestore(preset.name, preset.state)
+        })
+
+        Promise.all(promises).then(function(newPresets) {
+          newPresets.forEach(function(p) {
+            if (!firestorePresets.find(function(existing) { return existing.id === p.id })) {
+              firestorePresets.push(p)
+            }
+          })
+          refreshPresetSelect()
+          alert('成功导入 ' + newPresets.length + ' 个预设')
+        }).catch(function(err) {
+          alert('导入失败：' + err.message)
+        })
+      } catch (err) {
+        alert('文件格式错误')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  input.click()
+})
+
+// Game mode change handler
+var gameModRadios = document.getElementsByName('gameMode')
+for (var i = 0; i < gameModRadios.length; i++) {
+  gameModRadios[i].addEventListener('change', refreshPresetSelect)
+}
+

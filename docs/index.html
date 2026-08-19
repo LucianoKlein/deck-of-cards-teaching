@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HTML5 Deck of Cards</title>
+    <script src="auth.js"></script>
     <link href="example.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,600|Ubuntu+Condensed" rel="stylesheet" type="text/css">
   </head>
@@ -38,6 +39,19 @@
           <label><input type="radio" name="gameMode" value="a5lowball" /> A-5 Lowball (5)</label>
           <label><input type="radio" name="gameMode" value="27lowball" /> 2-7 Lowball (5)</label>
           <label><input type="radio" name="gameMode" value="badugi" /> Badugi (4)</label>
+        </div>
+        <div class="preset-row">
+          <label for="presetSelect">预设牌型:</label>
+          <select id="presetSelect">
+            <option value="">-- 选择预设 --</option>
+          </select>
+          <div class="preset-buttons">
+            <button id="loadPresetBtn">加载</button>
+            <button id="savePresetBtn" class="save-btn">保存当前</button>
+            <button id="deletePresetBtn" class="delete-btn">删除</button>
+            <button id="exportPresetsBtn" class="export-btn">导出</button>
+            <button id="importPresetsBtn" class="import-btn">导入</button>
+          </div>
         </div>
         <div class="hand-row"><textarea id="hand1Input" rows="1"></textarea><button id="hand1Btn">Hand1</button><button id="roll1Btn">Roll</button></div>
         <div class="hand-row"><textarea id="hand2Input" rows="1"></textarea><button id="hand2Btn">Hand2</button><button id="roll2Btn">Roll</button></div>
@@ -200,6 +214,7 @@
         <div id="caCounter" class="ca-counter"></div>
       </div>
     </div>
+    <script type="module" src="./firebase-config.js"></script>
     <script src="./deck.js"></script>
     <script src="./pokersolver.js"></script>
     <script src="example.js"></script>
