@@ -364,7 +364,7 @@ for (var i = 1; i <= HAND_COUNT; i++) {
 
 // Get current game mode card count
 function getGameModeCardCount() {
-  var selectedMode = document.querySelector('input[name="gameMode"]:checked')
+  var selectedMode = document.getElementById('gameModeSelect')
   if (!selectedMode) return 4 // default to Omaha
   switch (selectedMode.value) {
     case 'holdem':
@@ -388,7 +388,7 @@ function getGameModeCardCount() {
 
 // Check if current game mode needs board cards
 function needsBoardCards() {
-  var selectedMode = document.querySelector('input[name="gameMode"]:checked')
+  var selectedMode = document.getElementById('gameModeSelect')
   if (!selectedMode) return true
   return selectedMode.value !== 'fivecard' &&
          selectedMode.value !== 'a5lowball' &&
@@ -424,9 +424,10 @@ function updateBoardControls() {
 }
 
 // Listen for game mode changes
-document.querySelectorAll('input[name="gameMode"]').forEach(function(radio) {
-  radio.addEventListener('change', updateBoardControls)
-})
+var gameModeSelectElement = document.getElementById('gameModeSelect')
+if (gameModeSelectElement) {
+  gameModeSelectElement.addEventListener('change', updateBoardControls)
+}
 
 // Initialize board controls on page load
 updateBoardControls()
@@ -948,16 +949,16 @@ $clearMarkingBtn.addEventListener('click', function () {
 
 // SUBMIT Button - Check if chip is placed correctly
 $submitBtn.addEventListener('click', function () {
-  var gameMode = document.querySelector('input[name="gameMode"]:checked')
-  if (!gameMode) {
+  var gameModeSelect = document.getElementById('gameModeSelect')
+  if (!gameModeSelect) {
     alert('Please select a game mode')
     return
   }
 
-  var isFiveCardDraw = gameMode.value === 'fivecard'
-  var isA5Lowball = gameMode.value === 'a5lowball'
-  var is27Lowball = gameMode.value === '27lowball'
-  var isBadugi = gameMode.value === 'badugi'
+  var isFiveCardDraw = gameModeSelect.value === 'fivecard'
+  var isA5Lowball = gameModeSelect.value === 'a5lowball'
+  var is27Lowball = gameModeSelect.value === '27lowball'
+  var isBadugi = gameModeSelect.value === 'badugi'
   var boardCardsPS = []
 
   // Get board cards only if needed
@@ -1069,14 +1070,14 @@ $submitBtn.addEventListener('click', function () {
         // 5 Card Draw: use only the 5 cards in hand
         if (handCardIndices.length !== 5) continue
         handResult = Hand.solve(handCardsPS)
-      } else if (gameMode.value === 'holdem') {
+      } else if (gameModeSelect.value === 'holdem') {
         if (handCardIndices.length !== 2) continue
         var allCards = handCardsPS.concat(boardCardsPS)
         handResult = Hand.solve(allCards)
-      } else if (gameMode.value === 'omaha') {
+      } else if (gameModeSelect.value === 'omaha') {
         if (handCardIndices.length !== 4) continue
         handResult = solveOmahaHand(handCardsPS, boardCardsPS)
-      } else if (gameMode.value === 'bigo') {
+      } else if (gameModeSelect.value === 'bigo') {
         if (handCardIndices.length !== 5) continue
         handResult = solveOmahaHand(handCardsPS, boardCardsPS)
       }
@@ -1315,16 +1316,16 @@ $validateHandsBtn.addEventListener('click', function () {
   // Remove previous winner highlights and badges
   clearWinnerHighlights()
 
-  var gameMode = document.querySelector('input[name="gameMode"]:checked')
-  if (!gameMode) {
+  var gameModeSelect = document.getElementById('gameModeSelect')
+  if (!gameModeSelect) {
     alert('Please select a game mode')
     return
   }
 
-  var isFiveCardDraw = gameMode.value === 'fivecard'
-  var isA5Lowball = gameMode.value === 'a5lowball'
-  var is27Lowball = gameMode.value === '27lowball'
-  var isBadugi = gameMode.value === 'badugi'
+  var isFiveCardDraw = gameModeSelect.value === 'fivecard'
+  var isA5Lowball = gameModeSelect.value === 'a5lowball'
+  var is27Lowball = gameModeSelect.value === '27lowball'
+  var isBadugi = gameModeSelect.value === 'badugi'
   var boardCardsPS = []
 
   // Get board cards only if needed
@@ -1436,16 +1437,16 @@ $validateHandsBtn.addEventListener('click', function () {
         // 5 Card Draw: use only the 5 cards in hand
         if (handCardIndices.length !== 5) continue
         handResult = Hand.solve(handCardsPS)
-      } else if (gameMode.value === 'holdem') {
+      } else if (gameModeSelect.value === 'holdem') {
         // Hold'em: use all hand cards + all board cards
         if (handCardIndices.length !== 2) continue
         var allCards = handCardsPS.concat(boardCardsPS)
         handResult = Hand.solve(allCards)
-      } else if (gameMode.value === 'omaha') {
+      } else if (gameModeSelect.value === 'omaha') {
         // Omaha: must use exactly 2 from hand + exactly 3 from board
         if (handCardIndices.length !== 4) continue
         handResult = solveOmahaHand(handCardsPS, boardCardsPS)
-      } else if (gameMode.value === 'bigo') {
+      } else if (gameModeSelect.value === 'bigo') {
         // Big O: must use exactly 2 from hand + exactly 3 from board
         if (handCardIndices.length !== 5) continue
         handResult = solveOmahaHand(handCardsPS, boardCardsPS)
@@ -4602,13 +4603,8 @@ window.addEventListener('firebaseReady', function(e) {
 
 // Get current game mode
 function getCurrentGameMode() {
-  var radios = document.getElementsByName('gameMode')
-  for (var i = 0; i < radios.length; i++) {
-    if (radios[i].checked) {
-      return radios[i].value
-    }
-  }
-  return 'omaha'
+  var select = document.getElementById('gameModeSelect')
+  return select ? select.value : 'omaha'
 }
 
 // PRESET_PLACEHOLDER
@@ -4808,8 +4804,8 @@ $importPresetsBtn.addEventListener('click', function() {
 })
 
 // Game mode change handler
-var gameModRadios = document.getElementsByName('gameMode')
-for (var i = 0; i < gameModRadios.length; i++) {
-  gameModRadios[i].addEventListener('change', refreshPresetSelect)
+var gameModeSelect = document.getElementById('gameModeSelect')
+if (gameModeSelect) {
+  gameModeSelect.addEventListener('change', refreshPresetSelect)
 }
 

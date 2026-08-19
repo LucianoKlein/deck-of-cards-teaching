@@ -32,13 +32,16 @@
       <div id="sidebarHandle">Hands <span id="sidebarCollapseIcon">-</span></div>
       <div id="sidebarContent">
         <div class="game-mode-row">
-          <label><input type="radio" name="gameMode" value="holdem" /> Hold'em (2)</label>
-          <label><input type="radio" name="gameMode" value="omaha" checked /> Omaha (4)</label>
-          <label><input type="radio" name="gameMode" value="bigo" /> Big O (5)</label>
-          <label><input type="radio" name="gameMode" value="fivecard" /> 5 Card Draw (5)</label>
-          <label><input type="radio" name="gameMode" value="a5lowball" /> A-5 Lowball (5)</label>
-          <label><input type="radio" name="gameMode" value="27lowball" /> 2-7 Lowball (5)</label>
-          <label><input type="radio" name="gameMode" value="badugi" /> Badugi (4)</label>
+          <label for="gameModeSelect">游戏模式:</label>
+          <select id="gameModeSelect">
+            <option value="holdem">Hold'em (2)</option>
+            <option value="omaha" selected>Omaha (4)</option>
+            <option value="bigo">Big O (5)</option>
+            <option value="fivecard">5 Card Draw (5)</option>
+            <option value="a5lowball">A-5 Lowball (5)</option>
+            <option value="27lowball">2-7 Lowball (5)</option>
+            <option value="badugi">Badugi (4)</option>
+          </select>
         </div>
         <div class="preset-row">
           <label for="presetSelect">预设牌型:</label>
