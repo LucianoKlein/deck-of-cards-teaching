@@ -4845,6 +4845,35 @@ $lowHandTraining.addEventListener('click', function () {
   }
 })
 
+// Sync Low Hand Mode with main game mode
+document.querySelectorAll('input[name="lowHandMode"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    var gameModeSelect = document.getElementById('gameModeSelect')
+    if (gameModeSelect && this.checked) {
+      gameModeSelect.value = this.value
+      // Trigger change event to update any dependent functionality
+      var event = new Event('change', { bubbles: true })
+      gameModeSelect.dispatchEvent(event)
+      console.log('[LOW HAND] Game mode synced to:', this.value)
+    }
+  })
+})
+
+// Sync main game mode with Low Hand Mode when it changes
+var gameModeSelect = document.getElementById('gameModeSelect')
+if (gameModeSelect) {
+  gameModeSelect.addEventListener('change', function() {
+    // Only sync if the mode is Omaha or Big O
+    if (this.value === 'omaha' || this.value === 'bigo') {
+      var lowHandRadio = document.querySelector('input[name="lowHandMode"][value="' + this.value + '"]')
+      if (lowHandRadio) {
+        lowHandRadio.checked = true
+        console.log('[MAIN GAME] Low hand mode synced to:', this.value)
+      }
+    }
+  })
+}
+
 // Collapse/Expand
 $lowHandTrainingCollapseIcon.addEventListener('click', function (e) {
   e.stopPropagation()
