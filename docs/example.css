@@ -1457,6 +1457,31 @@ body.ctrl-pressed .card {
   font-weight: bold;
   margin-bottom: 0.2rem;
 }
+.low-highest-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  color: #fff;
+}
+.low-highest-input label {
+  color: #aed581;
+}
+.low-highest-input input {
+  width: 40px;
+  padding: 0.3rem;
+  font-size: 0.7rem;
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  background: #223328;
+  color: #fff;
+  text-align: center;
+}
+.low-highest-input input:focus {
+  outline: none;
+  border-color: #aed581;
+  box-shadow: 0 0 5px rgba(174, 213, 129, 0.5);
+}
 .low-gen-btn {
   background: none;
   color: #fff;
@@ -1470,6 +1495,20 @@ body.ctrl-pressed .card {
 .low-gen-btn:hover {
   background: #4caf50;
   color: #fff;
+}
+.low-preset-btn {
+  background: none;
+  color: #fff;
+  border: 1px solid #64b5f6;
+  padding: 0.4rem;
+  font-size: 0.65rem;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+}
+.low-preset-btn:hover {
+  background: #64b5f6;
+  color: #000;
 }
 .low-info {
   color: #aed581;

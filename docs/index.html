@@ -225,11 +225,25 @@
           <label><input type="radio" name="lowHandMode" value="bigo" /> Big O (5)</label>
         </div>
         <div class="low-generate-row">
-          <span class="low-gen-label">板子Low牌数量：</span>
+          <span class="low-gen-label">板子配置：</span>
+          <div class="low-highest-input">
+            <label for="highestLowCard">最高Low牌:</label>
+            <input type="text" id="highestLowCard" placeholder="8" maxlength="1" value="8" />
+          </div>
+        </div>
+        <div class="low-generate-row">
+          <span class="low-gen-label">生成板子：</span>
           <button id="lowGen0-2Btn" class="low-gen-btn">&lt; 3个Low点</button>
           <button id="lowGen3Btn" class="low-gen-btn">3个Low点</button>
           <button id="lowGen4Btn" class="low-gen-btn">4个Low点</button>
           <button id="lowGen5Btn" class="low-gen-btn">5个Low点</button>
+        </div>
+        <div class="low-generate-row" id="lowHandPresetsRow" style="display: none;">
+          <span class="low-gen-label">生成手牌预设：</span>
+          <button id="lowGen3HandsBtn" class="low-preset-btn" style="display: none;">4手2-Low点</button>
+          <button id="lowGen1LiveBtn" class="low-preset-btn" style="display: none;">4手1-Live Card</button>
+          <button id="lowGen2LiveBtn" class="low-preset-btn" style="display: none;">4手2-Live Card</button>
+          <button id="lowGenMixedBtn" class="low-preset-btn" style="display: none;">混合Live Card</button>
         </div>
         <div class="low-info">
           <div id="lowTypeInfo">Low牌定义：A, 2, 3, 4, 5, 6, 7, 8</div>

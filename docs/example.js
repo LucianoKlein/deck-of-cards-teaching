@@ -4939,6 +4939,15 @@ function isLowRank(rank) {
   return rank === 0 || (rank >= 1 && rank <= 7)  // A, 2, 3, 4, 5, 6, 7, 8
 }
 
+// Get highest low card from input (default 8)
+function getHighestLowCard() {
+  var input = document.getElementById('highestLowCard')
+  if (!input) return 8
+  var val = input.value.trim().toUpperCase()
+  var rankMap = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8 }
+  return rankMap[val] || 8
+}
+
 // Count unique low ranks on board
 function countUniqueLowRanks(cardIndices) {
   var lowRanks = new Set()
@@ -4951,10 +4960,33 @@ function countUniqueLowRanks(cardIndices) {
   return lowRanks.size
 }
 
+// Get low ranks from board
+function getBoardLowRanks(cardIndices) {
+  var lowRanks = new Set()
+  cardIndices.forEach(function (idx) {
+    var rank = idx % 13
+    if (isLowRank(rank)) {
+      lowRanks.add(rank)
+    }
+  })
+  return Array.from(lowRanks)
+}
+
+// Store last generated board for hand presets
+var lastGeneratedBoard = null
+var lastBoardLowCount = 0
+
 // Generate board with specific number of unique low ranks
 function generateLowBoard(targetLowCount) {
-  var lowRanks = [0, 1, 2, 3, 4, 5, 6, 7]  // A, 2, 3, 4, 5, 6, 7, 8
-  var highRanks = [8, 9, 10, 11, 12]  // 9, T, J, Q, K
+  var highestLow = getHighestLowCard()
+  var lowRanks = []
+  for (var i = 0; i <= highestLow - 1; i++) {
+    lowRanks.push(i)  // A=0, 2=1, ..., 8=7
+  }
+  var highRanks = []
+  for (var j = highestLow; j <= 12; j++) {
+    highRanks.push(j)  // 9=8, T=9, ..., K=12
+  }
 
   function shuffleArray(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -4977,7 +5009,7 @@ function generateLowBoard(targetLowCount) {
     // Fill rest with high ranks
     var shuffledHigh = shuffleArray(highRanks.slice())
     var needed = 5 - selectedRanks.length
-    for (var j = 0; j < needed; j++) {
+    for (var j = 0; j < needed && j < shuffledHigh.length; j++) {
       selectedRanks.push(shuffledHigh[j])
     }
   } else if (targetLowCount === 3) {
@@ -5001,15 +5033,15 @@ function generateLowBoard(targetLowCount) {
 
     // Fill rest with high ranks
     var shuffledHigh4 = shuffleArray(highRanks.slice())
-    selectedRanks.push(shuffledHigh4[0])
+    if (shuffledHigh4.length > 0) {
+      selectedRanks.push(shuffledHigh4[0])
+    }
   } else if (targetLowCount === 5) {
     // Exactly 5 unique low ranks
     var shuffledLow5 = shuffleArray(lowRanks.slice())
-    selectedRanks.push(shuffledLow5[0])
-    selectedRanks.push(shuffledLow5[1])
-    selectedRanks.push(shuffledLow5[2])
-    selectedRanks.push(shuffledLow5[3])
-    selectedRanks.push(shuffledLow5[4])
+    for (var k = 0; k < 5 && k < shuffledLow5.length; k++) {
+      selectedRanks.push(shuffledLow5[k])
+    }
   }
 
   // Assign random suits (avoid 3+ of same suit for no flush)
@@ -5039,7 +5071,7 @@ function generateLowBoard(targetLowCount) {
 
   // Convert to card indices
   var cardIndices = []
-  for (var c = 0; c < 5; c++) {
+  for (var c = 0; c < selectedRanks.length; c++) {
     var rank = selectedRanks[c]
     var suit = suitPool[c]
     cardIndices.push(suit * 13 + rank)
@@ -5049,8 +5081,35 @@ function generateLowBoard(targetLowCount) {
 }
 
 // Deal a generated low board
-function dealLowBoard(cardIndices) {
+function dealLowBoard(cardIndices, lowCount) {
   clearWinnerHighlights()
+
+  // Store for hand presets
+  lastGeneratedBoard = cardIndices
+  lastBoardLowCount = lowCount
+
+  // Show/hide hand preset buttons based on board
+  var presetsRow = document.getElementById('lowHandPresetsRow')
+  var gen3HandsBtn = document.getElementById('lowGen3HandsBtn')
+  var gen1LiveBtn = document.getElementById('lowGen1LiveBtn')
+  var gen2LiveBtn = document.getElementById('lowGen2LiveBtn')
+  var genMixedBtn = document.getElementById('lowGenMixedBtn')
+
+  if (lowCount === 3) {
+    presetsRow.style.display = 'flex'
+    gen3HandsBtn.style.display = 'block'
+    gen1LiveBtn.style.display = 'none'
+    gen2LiveBtn.style.display = 'none'
+    genMixedBtn.style.display = 'none'
+  } else if (lowCount === 4) {
+    presetsRow.style.display = 'flex'
+    gen3HandsBtn.style.display = 'none'
+    gen1LiveBtn.style.display = 'block'
+    gen2LiveBtn.style.display = 'block'
+    genMixedBtn.style.display = 'block'
+  } else {
+    presetsRow.style.display = 'none'
+  }
 
   // Recycle old board
   if (boardCards.length > 0) {
@@ -5106,23 +5165,446 @@ function dealLowBoard(cardIndices) {
 // Button event listeners for generating boards
 $lowGen0_2Btn.addEventListener('click', function () {
   var cardIndices = generateLowBoard(2)  // 0-2 low ranks
-  dealLowBoard(cardIndices)
+  dealLowBoard(cardIndices, 2)
 })
 
 $lowGen3Btn.addEventListener('click', function () {
   var cardIndices = generateLowBoard(3)  // exactly 3 low ranks
-  dealLowBoard(cardIndices)
+  dealLowBoard(cardIndices, 3)
 })
 
 $lowGen4Btn.addEventListener('click', function () {
   var cardIndices = generateLowBoard(4)  // exactly 4 low ranks
-  dealLowBoard(cardIndices)
+  dealLowBoard(cardIndices, 4)
 })
 
 $lowGen5Btn.addEventListener('click', function () {
   var cardIndices = generateLowBoard(5)  // exactly 5 low ranks
-  dealLowBoard(cardIndices)
+  dealLowBoard(cardIndices, 5)
 })
+
+// Helper function to generate hands with 2 low cards (for 3-low board)
+function generate4Hands2Low() {
+  if (!lastGeneratedBoard || lastBoardLowCount !== 3) return
+
+  var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
+  var highestLow = getHighestLowCard()
+  var allLowRanks = []
+  for (var i = 0; i <= highestLow - 1; i++) {
+    allLowRanks.push(i)
+  }
+
+  // Get available low ranks (not on board)
+  var availableLowRanks = allLowRanks.filter(function(r) {
+    return boardLowRanks.indexOf(r) === -1
+  })
+
+  var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
+  var usedCards = new Set(lastGeneratedBoard)
+
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  function getRandomCard(rank, excluded) {
+    var suits = shuffleArray([0, 1, 2, 3])
+    for (var s = 0; s < suits.length; s++) {
+      var cardIdx = suits[s] * 13 + rank
+      if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+        return cardIdx
+      }
+    }
+    return -1
+  }
+
+  function getRandomHighCard(excluded) {
+    var highRanks = []
+    for (var r = highestLow; r <= 12; r++) {
+      highRanks.push(r)
+    }
+    shuffleArray(highRanks)
+
+    for (var i = 0; i < highRanks.length; i++) {
+      var suits = shuffleArray([0, 1, 2, 3])
+      for (var s = 0; s < suits.length; s++) {
+        var cardIdx = suits[s] * 13 + highRanks[i]
+        if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+          return cardIdx
+        }
+      }
+    }
+    return -1
+  }
+
+  // Generate 4 hands
+  for (var h = 1; h <= 4; h++) {
+    var handCards = []
+    var excluded = new Set()
+
+    // Pick 2 low cards
+    var shuffledLow = shuffleArray(availableLowRanks.slice())
+    for (var l = 0; l < 2 && l < shuffledLow.length; l++) {
+      var card = getRandomCard(shuffledLow[l], excluded)
+      if (card !== -1) {
+        handCards.push(card)
+        excluded.add(card)
+        usedCards.add(card)
+      }
+    }
+
+    // Fill with high cards
+    while (handCards.length < cardCount) {
+      var highCard = getRandomHighCard(excluded)
+      if (highCard !== -1) {
+        handCards.push(highCard)
+        excluded.add(highCard)
+        usedCards.add(highCard)
+      } else {
+        break
+      }
+    }
+
+    // Set hand input
+    var handInput = document.getElementById('hand' + h + 'Input')
+    if (handInput) {
+      handInput.value = handCards.map(cardIndexToCode).join('')
+    }
+
+    // Display hand
+    showHandByIndices('hand' + h, handCards)
+  }
+}
+
+// Helper function to generate 4 hands with 1 live card
+function generate4Hands1Live() {
+  if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
+
+  var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
+  var highestLow = getHighestLowCard()
+  var allLowRanks = []
+  for (var i = 0; i <= highestLow - 1; i++) {
+    allLowRanks.push(i)
+  }
+
+  // Get missing low rank (the 1 live card)
+  var missingLowRank = allLowRanks.find(function(r) {
+    return boardLowRanks.indexOf(r) === -1
+  })
+
+  if (missingLowRank === undefined) return
+
+  var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
+  var usedCards = new Set(lastGeneratedBoard)
+
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  function getRandomCard(rank, excluded) {
+    var suits = shuffleArray([0, 1, 2, 3])
+    for (var s = 0; s < suits.length; s++) {
+      var cardIdx = suits[s] * 13 + rank
+      if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+        return cardIdx
+      }
+    }
+    return -1
+  }
+
+  function getRandomHighCard(excluded) {
+    var highRanks = []
+    for (var r = highestLow; r <= 12; r++) {
+      highRanks.push(r)
+    }
+    shuffleArray(highRanks)
+
+    for (var i = 0; i < highRanks.length; i++) {
+      var suits = shuffleArray([0, 1, 2, 3])
+      for (var s = 0; s < suits.length; s++) {
+        var cardIdx = suits[s] * 13 + highRanks[i]
+        if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+          return cardIdx
+        }
+      }
+    }
+    return -1
+  }
+
+  // Generate 4 hands, each with the missing low rank
+  for (var h = 1; h <= 4; h++) {
+    var handCards = []
+    var excluded = new Set()
+
+    // Add the 1 live card
+    var liveCard = getRandomCard(missingLowRank, excluded)
+    if (liveCard !== -1) {
+      handCards.push(liveCard)
+      excluded.add(liveCard)
+      usedCards.add(liveCard)
+    }
+
+    // Fill with high cards
+    while (handCards.length < cardCount) {
+      var highCard = getRandomHighCard(excluded)
+      if (highCard !== -1) {
+        handCards.push(highCard)
+        excluded.add(highCard)
+        usedCards.add(highCard)
+      } else {
+        break
+      }
+    }
+
+    // Set hand input
+    var handInput = document.getElementById('hand' + h + 'Input')
+    if (handInput) {
+      handInput.value = handCards.map(cardIndexToCode).join('')
+    }
+
+    // Display hand
+    showHandByIndices('hand' + h, handCards)
+  }
+}
+
+// Helper function to generate 4 hands with 2 live cards
+function generate4Hands2Live() {
+  if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
+
+  var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
+  var highestLow = getHighestLowCard()
+  var allLowRanks = []
+  for (var i = 0; i <= highestLow - 1; i++) {
+    allLowRanks.push(i)
+  }
+
+  // Get the missing low rank
+  var missingLowRank = allLowRanks.find(function(r) {
+    return boardLowRanks.indexOf(r) === -1
+  })
+
+  if (missingLowRank === undefined) return
+
+  var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
+  var usedCards = new Set(lastGeneratedBoard)
+
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  function getRandomCard(rank, excluded) {
+    var suits = shuffleArray([0, 1, 2, 3])
+    for (var s = 0; s < suits.length; s++) {
+      var cardIdx = suits[s] * 13 + rank
+      if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+        return cardIdx
+      }
+    }
+    return -1
+  }
+
+  function getRandomHighCard(excluded) {
+    var highRanks = []
+    for (var r = highestLow; r <= 12; r++) {
+      highRanks.push(r)
+    }
+    shuffleArray(highRanks)
+
+    for (var i = 0; i < highRanks.length; i++) {
+      var suits = shuffleArray([0, 1, 2, 3])
+      for (var s = 0; s < suits.length; s++) {
+        var cardIdx = suits[s] * 13 + highRanks[i]
+        if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+          return cardIdx
+        }
+      }
+    }
+    return -1
+  }
+
+  // Generate 4 hands, each with missing rank + one board low rank
+  for (var h = 1; h <= 4; h++) {
+    var handCards = []
+    var excluded = new Set()
+
+    // Add the missing low rank (live card 1)
+    var liveCard1 = getRandomCard(missingLowRank, excluded)
+    if (liveCard1 !== -1) {
+      handCards.push(liveCard1)
+      excluded.add(liveCard1)
+      usedCards.add(liveCard1)
+    }
+
+    // Add one of the board low ranks (live card 2)
+    var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
+    var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
+    if (liveCard2 !== -1) {
+      handCards.push(liveCard2)
+      excluded.add(liveCard2)
+      usedCards.add(liveCard2)
+    }
+
+    // Fill with high cards
+    while (handCards.length < cardCount) {
+      var highCard = getRandomHighCard(excluded)
+      if (highCard !== -1) {
+        handCards.push(highCard)
+        excluded.add(highCard)
+        usedCards.add(highCard)
+      } else {
+        break
+      }
+    }
+
+    // Set hand input
+    var handInput = document.getElementById('hand' + h + 'Input')
+    if (handInput) {
+      handInput.value = handCards.map(cardIndexToCode).join('')
+    }
+
+    // Display hand
+    showHandByIndices('hand' + h, handCards)
+  }
+}
+
+// Helper function to generate mixed hands (1-live and 2-live)
+function generate4HandsMixed() {
+  if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
+
+  // Generate: 1 hand with 1-live, 1 hand with 2-live, 2 random (1 or 2-live)
+  var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
+  var highestLow = getHighestLowCard()
+  var allLowRanks = []
+  for (var i = 0; i <= highestLow - 1; i++) {
+    allLowRanks.push(i)
+  }
+
+  var missingLowRank = allLowRanks.find(function(r) {
+    return boardLowRanks.indexOf(r) === -1
+  })
+
+  if (missingLowRank === undefined) return
+
+  var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
+  var usedCards = new Set(lastGeneratedBoard)
+
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  function getRandomCard(rank, excluded) {
+    var suits = shuffleArray([0, 1, 2, 3])
+    for (var s = 0; s < suits.length; s++) {
+      var cardIdx = suits[s] * 13 + rank
+      if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+        return cardIdx
+      }
+    }
+    return -1
+  }
+
+  function getRandomHighCard(excluded) {
+    var highRanks = []
+    for (var r = highestLow; r <= 12; r++) {
+      highRanks.push(r)
+    }
+    shuffleArray(highRanks)
+
+    for (var i = 0; i < highRanks.length; i++) {
+      var suits = shuffleArray([0, 1, 2, 3])
+      for (var s = 0; s < suits.length; s++) {
+        var cardIdx = suits[s] * 13 + highRanks[i]
+        if (!usedCards.has(cardIdx) && !excluded.has(cardIdx)) {
+          return cardIdx
+        }
+      }
+    }
+    return -1
+  }
+
+  function generateHand(type) {
+    var handCards = []
+    var excluded = new Set()
+
+    if (type === 1) {
+      // 1-live: just missing rank
+      var liveCard = getRandomCard(missingLowRank, excluded)
+      if (liveCard !== -1) {
+        handCards.push(liveCard)
+        excluded.add(liveCard)
+        usedCards.add(liveCard)
+      }
+    } else {
+      // 2-live: missing rank + one board low rank
+      var liveCard1 = getRandomCard(missingLowRank, excluded)
+      if (liveCard1 !== -1) {
+        handCards.push(liveCard1)
+        excluded.add(liveCard1)
+        usedCards.add(liveCard1)
+      }
+
+      var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
+      var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
+      if (liveCard2 !== -1) {
+        handCards.push(liveCard2)
+        excluded.add(liveCard2)
+        usedCards.add(liveCard2)
+      }
+    }
+
+    // Fill with high cards
+    while (handCards.length < cardCount) {
+      var highCard = getRandomHighCard(excluded)
+      if (highCard !== -1) {
+        handCards.push(highCard)
+        excluded.add(highCard)
+        usedCards.add(highCard)
+      } else {
+        break
+      }
+    }
+
+    return handCards
+  }
+
+  // Generate hands: 1-live, 2-live, random, random
+  var types = [1, 2, Math.random() < 0.5 ? 1 : 2, Math.random() < 0.5 ? 1 : 2]
+  shuffleArray(types)
+
+  for (var h = 1; h <= 4; h++) {
+    var handCards = generateHand(types[h - 1])
+
+    // Set hand input
+    var handInput = document.getElementById('hand' + h + 'Input')
+    if (handInput) {
+      handInput.value = handCards.map(cardIndexToCode).join('')
+    }
+
+    // Display hand
+    showHandByIndices('hand' + h, handCards)
+  }
+}
+
+// Add event listeners for hand preset buttons
+document.getElementById('lowGen3HandsBtn').addEventListener('click', generate4Hands2Low)
+document.getElementById('lowGen1LiveBtn').addEventListener('click', generate4Hands1Live)
+document.getElementById('lowGen2LiveBtn').addEventListener('click', generate4Hands2Live)
+document.getElementById('lowGenMixedBtn').addEventListener('click', generate4HandsMixed)
 
 // Submit Low Button - Evaluate low hands only
 $submitLowBtn.addEventListener('click', function () {
