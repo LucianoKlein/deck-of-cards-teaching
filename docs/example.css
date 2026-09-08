@@ -1389,4 +1389,108 @@ body.ctrl-pressed .card {
   border-color: #CE93D8;
 }
 
-
+/* Low Hand Training Panel */
+#lowHandTrainingPanel {
+  position: fixed;
+  left: 10px;
+  bottom: 150px;
+  background-color: #334d41;
+  padding: 0.5rem;
+  padding-top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-radius: 4px;
+  z-index: 1000;
+  min-width: 220px;
+}
+#lowHandTrainingPanel.show {
+  display: flex;
+}
+#lowHandTrainingHandle {
+  background-color: #223328;
+  color: #fff;
+  padding: 0.4rem;
+  margin: 0 -0.5rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+  font-size: 0.7rem;
+  cursor: move;
+  border-radius: 4px 4px 0 0;
+  user-select: none;
+}
+#lowHandTrainingCollapseIcon {
+  float: right;
+  cursor: pointer;
+  font-weight: bold;
+}
+#lowHandTrainingContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+#lowHandTrainingContent.collapsed {
+  display: none;
+}
+.low-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: #fff;
+}
+.low-mode-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.low-generate-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.low-gen-label {
+  color: #aed581;
+  font-size: 0.65rem;
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+}
+.low-gen-btn {
+  background: none;
+  color: #fff;
+  border: 1px solid #4caf50;
+  padding: 0.4rem;
+  font-size: 0.65rem;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+}
+.low-gen-btn:hover {
+  background: #4caf50;
+  color: #fff;
+}
+.low-info {
+  color: #aed581;
+  font-size: 0.6rem;
+  padding: 0.3rem;
+  text-align: center;
+  border-top: 1px solid #4caf50;
+  border-bottom: 1px solid #4caf50;
+}
+.submit-low-btn {
+  background: #ff6f00;
+  color: #fff;
+  border: 2px solid #ffa726;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 0.2rem;
+}
+.submit-low-btn:hover {
+  background: #ffa726;
+  color: #000;
+}

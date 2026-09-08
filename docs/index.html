@@ -217,6 +217,26 @@
         <div id="caCounter" class="ca-counter"></div>
       </div>
     </div>
+    <div id="lowHandTrainingPanel">
+      <div id="lowHandTrainingHandle">Low Hand特训 <span id="lowHandTrainingCollapseIcon">-</span></div>
+      <div id="lowHandTrainingContent">
+        <div class="low-mode-row">
+          <label><input type="radio" name="lowHandMode" value="omaha" checked /> Omaha (4)</label>
+          <label><input type="radio" name="lowHandMode" value="bigo" /> Big O (5)</label>
+        </div>
+        <div class="low-generate-row">
+          <span class="low-gen-label">板子Low牌数量：</span>
+          <button id="lowGen0-2Btn" class="low-gen-btn">&lt; 3个Low点</button>
+          <button id="lowGen3Btn" class="low-gen-btn">3个Low点</button>
+          <button id="lowGen4Btn" class="low-gen-btn">4个Low点</button>
+          <button id="lowGen5Btn" class="low-gen-btn">5个Low点</button>
+        </div>
+        <div class="low-info">
+          <div id="lowTypeInfo">Low牌定义：A, 2, 3, 4, 5, 6, 7, 8</div>
+        </div>
+        <button id="submitLowBtn" class="submit-low-btn">Submit Low</button>
+      </div>
+    </div>
     <script type="module" src="./firebase-config.js"></script>
     <script src="./deck.js"></script>
     <script src="./pokersolver.js"></script>

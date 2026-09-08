@@ -88,6 +88,7 @@ var $poker = document.createElement('button')
 var $flip = document.createElement('button')
 var $straightTraining = document.createElement('button')
 var $cardAnnouncement = document.createElement('button')
+var $lowHandTraining = document.createElement('button')
 
 $shuffle.textContent = 'Shuffle'
 $sort.textContent = 'Sort'
@@ -97,6 +98,7 @@ $poker.textContent = 'Poker'
 $flip.textContent = 'Flip'
 $straightTraining.textContent = '顺子特训'
 $cardAnnouncement.textContent = 'Card Announce'
+$lowHandTraining.textContent = 'Low Hand特训'
 
 var $title = document.createElement('span')
 $title.textContent = 'REG Poker Academy 教学系统'
@@ -111,6 +113,7 @@ $topbar.appendChild($poker)
 $topbar.appendChild($sort)
 $topbar.appendChild($straightTraining)
 $topbar.appendChild($cardAnnouncement)
+$topbar.appendChild($lowHandTraining)
 
 var $bottombar = document.getElementById('bottombar')
 
@@ -4815,4 +4818,449 @@ if (gameModeSelect) {
     refreshPresetSelect()
   })
 }
+
+// ============================================
+// Low Hand Training Mode
+// ============================================
+var $lowHandTrainingPanel = document.getElementById('lowHandTrainingPanel')
+var $lowHandTrainingHandle = document.getElementById('lowHandTrainingHandle')
+var $lowHandTrainingContent = document.getElementById('lowHandTrainingContent')
+var $lowHandTrainingCollapseIcon = document.getElementById('lowHandTrainingCollapseIcon')
+var $submitLowBtn = document.getElementById('submitLowBtn')
+var lowHandTrainingVisible = false
+
+// Low hand buttons
+var $lowGen0_2Btn = document.getElementById('lowGen0-2Btn')
+var $lowGen3Btn = document.getElementById('lowGen3Btn')
+var $lowGen4Btn = document.getElementById('lowGen4Btn')
+var $lowGen5Btn = document.getElementById('lowGen5Btn')
+
+// Toggle Low Hand Training Panel
+$lowHandTraining.addEventListener('click', function () {
+  lowHandTrainingVisible = !lowHandTrainingVisible
+  if (lowHandTrainingVisible) {
+    $lowHandTrainingPanel.classList.add('show')
+  } else {
+    $lowHandTrainingPanel.classList.remove('show')
+  }
+})
+
+// Collapse/Expand
+$lowHandTrainingCollapseIcon.addEventListener('click', function (e) {
+  e.stopPropagation()
+  if ($lowHandTrainingContent.classList.contains('collapsed')) {
+    $lowHandTrainingContent.classList.remove('collapsed')
+    $lowHandTrainingCollapseIcon.textContent = '-'
+  } else {
+    $lowHandTrainingContent.classList.add('collapsed')
+    $lowHandTrainingCollapseIcon.textContent = '+'
+  }
+})
+
+// Dragging for low hand training panel
+var isLowHandDragging = false
+var lowHandDragOffsetX = 0
+var lowHandDragOffsetY = 0
+
+$lowHandTrainingHandle.addEventListener('mousedown', function (e) {
+  if (e.target === $lowHandTrainingCollapseIcon) return
+  isLowHandDragging = true
+  lowHandDragOffsetX = e.clientX - $lowHandTrainingPanel.offsetLeft
+  lowHandDragOffsetY = e.clientY - $lowHandTrainingPanel.offsetTop
+  e.preventDefault()
+})
+
+$lowHandTrainingHandle.addEventListener('touchstart', function (e) {
+  if (e.target === $lowHandTrainingCollapseIcon) return
+  isLowHandDragging = true
+  var touch = e.touches[0]
+  lowHandDragOffsetX = touch.clientX - $lowHandTrainingPanel.offsetLeft
+  lowHandDragOffsetY = touch.clientY - $lowHandTrainingPanel.offsetTop
+  e.preventDefault()
+})
+
+document.addEventListener('mousemove', function (e) {
+  if (!isLowHandDragging) return
+  $lowHandTrainingPanel.style.left = (e.clientX - lowHandDragOffsetX) + 'px'
+  $lowHandTrainingPanel.style.top = (e.clientY - lowHandDragOffsetY) + 'px'
+  $lowHandTrainingPanel.style.right = 'auto'
+  $lowHandTrainingPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('touchmove', function (e) {
+  if (!isLowHandDragging) return
+  var touch = e.touches[0]
+  $lowHandTrainingPanel.style.left = (touch.clientX - lowHandDragOffsetX) + 'px'
+  $lowHandTrainingPanel.style.top = (touch.clientY - lowHandDragOffsetY) + 'px'
+  $lowHandTrainingPanel.style.right = 'auto'
+  $lowHandTrainingPanel.style.bottom = 'auto'
+})
+
+document.addEventListener('mouseup', function () {
+  isLowHandDragging = false
+})
+
+document.addEventListener('touchend', function () {
+  isLowHandDragging = false
+})
+
+// Helper: Check if a rank is a low card (A, 2-8)
+function isLowRank(rank) {
+  // rank is 0-12 (A=0, 2=1, ..., K=12)
+  return rank === 0 || (rank >= 1 && rank <= 7)  // A, 2, 3, 4, 5, 6, 7, 8
+}
+
+// Count unique low ranks on board
+function countUniqueLowRanks(cardIndices) {
+  var lowRanks = new Set()
+  cardIndices.forEach(function (idx) {
+    var rank = idx % 13
+    if (isLowRank(rank)) {
+      lowRanks.add(rank)
+    }
+  })
+  return lowRanks.size
+}
+
+// Generate board with specific number of unique low ranks
+function generateLowBoard(targetLowCount) {
+  var lowRanks = [0, 1, 2, 3, 4, 5, 6, 7]  // A, 2, 3, 4, 5, 6, 7, 8
+  var highRanks = [8, 9, 10, 11, 12]  // 9, T, J, Q, K
+
+  function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1))
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+    }
+    return arr
+  }
+
+  var selectedRanks = []
+
+  if (targetLowCount === 0 || targetLowCount === 1 || targetLowCount === 2) {
+    // < 3 low ranks (0, 1, or 2)
+    var numLow = Math.floor(Math.random() * 3)  // 0, 1, or 2
+    var shuffledLow = shuffleArray(lowRanks.slice())
+    for (var i = 0; i < numLow; i++) {
+      selectedRanks.push(shuffledLow[i])
+    }
+
+    // Fill rest with high ranks
+    var shuffledHigh = shuffleArray(highRanks.slice())
+    var needed = 5 - selectedRanks.length
+    for (var j = 0; j < needed; j++) {
+      selectedRanks.push(shuffledHigh[j])
+    }
+  } else if (targetLowCount === 3) {
+    // Exactly 3 unique low ranks
+    var shuffledLow3 = shuffleArray(lowRanks.slice())
+    selectedRanks.push(shuffledLow3[0])
+    selectedRanks.push(shuffledLow3[1])
+    selectedRanks.push(shuffledLow3[2])
+
+    // Fill rest with high ranks
+    var shuffledHigh3 = shuffleArray(highRanks.slice())
+    selectedRanks.push(shuffledHigh3[0])
+    selectedRanks.push(shuffledHigh3[1])
+  } else if (targetLowCount === 4) {
+    // Exactly 4 unique low ranks
+    var shuffledLow4 = shuffleArray(lowRanks.slice())
+    selectedRanks.push(shuffledLow4[0])
+    selectedRanks.push(shuffledLow4[1])
+    selectedRanks.push(shuffledLow4[2])
+    selectedRanks.push(shuffledLow4[3])
+
+    // Fill rest with high ranks
+    var shuffledHigh4 = shuffleArray(highRanks.slice())
+    selectedRanks.push(shuffledHigh4[0])
+  } else if (targetLowCount === 5) {
+    // Exactly 5 unique low ranks
+    var shuffledLow5 = shuffleArray(lowRanks.slice())
+    selectedRanks.push(shuffledLow5[0])
+    selectedRanks.push(shuffledLow5[1])
+    selectedRanks.push(shuffledLow5[2])
+    selectedRanks.push(shuffledLow5[3])
+    selectedRanks.push(shuffledLow5[4])
+  }
+
+  // Assign random suits (avoid 3+ of same suit for no flush)
+  var suits = [0, 1, 2, 3]
+  var suitPool = []
+  for (var s = 0; s < 5; s++) {
+    suitPool.push(suits[Math.floor(Math.random() * 4)])
+  }
+
+  // Check suit distribution to avoid flush
+  var suitCount = {}
+  suitPool.forEach(function(s) {
+    suitCount[s] = (suitCount[s] || 0) + 1
+  })
+
+  // If any suit appears 3+ times, redistribute
+  var hasFlush = false
+  Object.keys(suitCount).forEach(function(k) {
+    if (suitCount[k] >= 3) hasFlush = true
+  })
+
+  if (hasFlush) {
+    // Ensure no more than 2 of any suit
+    suitPool = [0, 0, 1, 1, 2]
+    shuffleArray(suitPool)
+  }
+
+  // Convert to card indices
+  var cardIndices = []
+  for (var c = 0; c < 5; c++) {
+    var rank = selectedRanks[c]
+    var suit = suitPool[c]
+    cardIndices.push(suit * 13 + rank)
+  }
+
+  return cardIndices
+}
+
+// Deal a generated low board
+function dealLowBoard(cardIndices) {
+  clearWinnerHighlights()
+
+  // Recycle old board
+  if (boardCards.length > 0) {
+    deck.queue(function (next) {
+      var cardsToReturn = boardCards.slice()
+      boardCards = []
+      cardsToReturn.forEach(function (card, i) {
+        card.animateTo({
+          delay: i * 50,
+          duration: 200,
+          x: 0, y: 0, rot: 0,
+          onStart: function () {
+            card.setSide('back')
+            card.$el.style.zIndex = ''
+          },
+          onComplete: function () {
+            if (i === cardsToReturn.length - 1) next()
+          }
+        })
+      })
+    })
+  }
+
+  // Deal new board
+  deck.queue(function (next) {
+    $boardInput.value = cardIndices.map(cardIndexToCode).join('')
+    var fontSize = 16
+    var len = deck.cards.length
+
+    cardIndices.forEach(function (cardIndex, i) {
+      var card = deck.cards.find(function (c) { return c.i === cardIndex })
+      if (!card) return
+      boardCards.push(card)
+      card.isBoardCard = true
+      card.boardIndex = i
+
+      card.animateTo({
+        delay: i * 250,
+        duration: 250,
+        x: BOARD_X + Math.round((i - 2) * 80 * fontSize / 16),
+        y: BOARD_Y,
+        rot: 0,
+        onStart: function () { card.$el.style.zIndex = len + i },
+        onComplete: function () {
+          card.setSide('front')
+          if (i === cardIndices.length - 1) next()
+        }
+      })
+    })
+  })
+}
+
+// Button event listeners for generating boards
+$lowGen0_2Btn.addEventListener('click', function () {
+  var cardIndices = generateLowBoard(2)  // 0-2 low ranks
+  dealLowBoard(cardIndices)
+})
+
+$lowGen3Btn.addEventListener('click', function () {
+  var cardIndices = generateLowBoard(3)  // exactly 3 low ranks
+  dealLowBoard(cardIndices)
+})
+
+$lowGen4Btn.addEventListener('click', function () {
+  var cardIndices = generateLowBoard(4)  // exactly 4 low ranks
+  dealLowBoard(cardIndices)
+})
+
+$lowGen5Btn.addEventListener('click', function () {
+  var cardIndices = generateLowBoard(5)  // exactly 5 low ranks
+  dealLowBoard(cardIndices)
+})
+
+// Submit Low Button - Evaluate low hands only
+$submitLowBtn.addEventListener('click', function () {
+  var lowHandMode = document.querySelector('input[name="lowHandMode"]:checked')
+  if (!lowHandMode) {
+    alert('请选择游戏模式 (Omaha 或 Big O)')
+    return
+  }
+
+  var boardInput = $boardInput.value.trim().toLowerCase()
+  if (!boardInput) {
+    alert('请先设置Board1公共牌')
+    return
+  }
+
+  var boardCardIndices = parseCardInput(boardInput)
+  if (boardCardIndices.length < 5) {
+    alert('Board1必须有5张牌')
+    return
+  }
+
+  // Convert to poker solver format for low evaluation
+  var boardCardsPS = boardCardIndices.map(function (i) {
+    return cardIndexToPokerSolverFormat(i)
+  })
+
+  var winners = []
+  var bestLow = null
+  var expectedCardCount = lowHandMode.value === 'bigo' ? 5 : 4
+
+  // Evaluate each hand for low
+  for (var i = 1; i <= HAND_COUNT; i++) {
+    var handKey = 'hand' + i
+    var handInput = document.getElementById(handKey + 'Input').value.trim().toLowerCase()
+
+    if (!handInput) continue
+
+    var handCardIndices = parseCardInput(handInput)
+    if (handCardIndices.length !== expectedCardCount) continue
+
+    var handCardsPS = handCardIndices.map(function (idx) {
+      return cardIndexToPokerSolverFormat(idx)
+    })
+
+    // Evaluate Omaha/Big O low hand (must use exactly 2 from hand + 3 from board)
+    var lowResult = solveOmahaLowHand(handCardsPS, boardCardsPS)
+
+    if (!lowResult) continue
+
+    if (!bestLow) {
+      bestLow = lowResult
+      winners = [handKey]
+    } else {
+      var comparison = compareOmahaLow(lowResult, bestLow)
+      if (comparison < 0) {
+        // New best low
+        bestLow = lowResult
+        winners = [handKey]
+      } else if (comparison === 0) {
+        // Tie
+        winners.push(handKey)
+      }
+    }
+  }
+
+  if (winners.length === 0) {
+    alert('没有有效的low手牌')
+    return
+  }
+
+  // Check if Low chip is placed on winning hand
+  var chipPlaced = checkLowChipPlacement(winners)
+
+  if (chipPlaced) {
+    showCorrectFeedback()
+  } else {
+    showIncorrectFeedback()
+  }
+})
+
+// Solve Omaha low hand (must use exactly 2 from hand + 3 from board)
+function solveOmahaLowHand(handCards, boardCards) {
+  var bestLow = null
+
+  // Try all combinations of 2 cards from hand
+  for (var i = 0; i < handCards.length - 1; i++) {
+    for (var j = i + 1; j < handCards.length; j++) {
+      var twoFromHand = [handCards[i], handCards[j]]
+
+      // Try all combinations of 3 cards from board
+      for (var a = 0; a < boardCards.length - 2; a++) {
+        for (var b = a + 1; b < boardCards.length - 1; b++) {
+          for (var c = b + 1; c < boardCards.length; c++) {
+            var threeFromBoard = [boardCards[a], boardCards[b], boardCards[c]]
+            var fiveCards = twoFromHand.concat(threeFromBoard)
+
+            var lowHand = evaluateOmahaLow(fiveCards)
+
+            if (lowHand && (!bestLow || compareOmahaLow(lowHand, bestLow) < 0)) {
+              bestLow = lowHand
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return bestLow
+}
+
+// Evaluate if 5 cards make a qualifying low (8-or-better)
+function evaluateOmahaLow(fiveCardsPS) {
+  if (fiveCardsPS.length !== 5) return null
+
+  // Convert to rank values (A=1, 2-8 are qualifying)
+  var ranks = fiveCardsPS.map(function(card) {
+    var rankChar = card[0]
+    if (rankChar === 'A') return 1
+    if (rankChar === 'T') return 10
+    if (rankChar === 'J') return 11
+    if (rankChar === 'Q') return 12
+    if (rankChar === 'K') return 13
+    return parseInt(rankChar)
+  })
+
+  // Check if all ranks are 8 or lower (qualifying for low)
+  var allQualify = ranks.every(function(r) {
+    return r >= 1 && r <= 8
+  })
+
+  if (!allQualify) return null
+
+  // Check for pairs (pairs disqualify the low)
+  var rankCount = {}
+  ranks.forEach(function(r) {
+    rankCount[r] = (rankCount[r] || 0) + 1
+  })
+
+  var hasPair = Object.values(rankCount).some(function(count) {
+    return count >= 2
+  })
+
+  if (hasPair) return null
+
+  // Valid low hand - sort ranks descending for comparison
+  var sortedRanks = ranks.slice().sort(function(a, b) { return b - a })
+
+  return {
+    ranks: sortedRanks,
+    score: calculateLowScore(sortedRanks)
+  }
+}
+
+// Calculate low score (lower is better)
+function calculateLowScore(sortedRanks) {
+  var score = 0
+  for (var i = 0; i < sortedRanks.length; i++) {
+    score += sortedRanks[i] * Math.pow(100, 4 - i)
+  }
+  return score
+}
+
+// Compare two Omaha low hands (-1 if hand1 better, 1 if hand2 better, 0 tie)
+function compareOmahaLow(hand1, hand2) {
+  if (hand1.score < hand2.score) return -1
+  if (hand1.score > hand2.score) return 1
+  return 0
+}
+
 
