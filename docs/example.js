@@ -5504,15 +5504,26 @@ function generate4Hands2Live() {
     return -1
   }
 
-  // Generate 4 hands, each with 2 different live low cards
+  // Generate all possible combinations of 2 missing low ranks
+  var allCombinations = []
+  for (var i = 0; i < missingLowRanks.length; i++) {
+    for (var j = i + 1; j < missingLowRanks.length; j++) {
+      allCombinations.push([missingLowRanks[i], missingLowRanks[j]])
+    }
+  }
+
+  // Shuffle combinations to get random variety
+  shuffleArray(allCombinations)
+
+  // Generate 4 hands, each with a different combination of 2 live low cards
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
 
-    // Pick 2 random missing low ranks for this hand
-    var shuffledMissing = shuffleArray(missingLowRanks.slice())
-    var liveRank1 = shuffledMissing[0]
-    var liveRank2 = shuffledMissing[1]
+    // Use a different combination for each hand (cycle if needed)
+    var combIndex = (h - 1) % allCombinations.length
+    var liveRank1 = allCombinations[combIndex][0]
+    var liveRank2 = allCombinations[combIndex][1]
 
     // Add first live card
     var liveCard1 = getRandomCard(liveRank1, excluded)
