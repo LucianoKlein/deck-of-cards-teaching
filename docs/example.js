@@ -4675,6 +4675,28 @@ function applyState(state) {
       input.value = state.hands[i] || ''
     }
   }
+
+  // Auto-display all hands face-down after loading preset
+  for (var i = 1; i <= 8; i++) {
+    var handKey = 'hand' + i
+    var input = document.getElementById(handKey + 'Input')
+    if (input && input.value.trim()) {
+      showHand(handKey, input)
+    }
+  }
+
+  // Ensure all hand cards are face-down
+  deck.queue(function(next) {
+    for (var i = 1; i <= 8; i++) {
+      var handKey = 'hand' + i
+      if (handCards[handKey] && handCards[handKey].length > 0) {
+        handCards[handKey].forEach(function(card) {
+          card.setSide('back')
+        })
+      }
+    }
+    next()
+  })
 }
 
 // PRESET_PLACEHOLDER2
@@ -4840,6 +4862,11 @@ $lowHandTraining.addEventListener('click', function () {
   lowHandTrainingVisible = !lowHandTrainingVisible
   if (lowHandTrainingVisible) {
     $lowHandTrainingPanel.classList.add('show')
+    // Auto-collapse Texture Analysis panel when Low Hand Training opens
+    if (!$analysisPanelContent.classList.contains('collapsed')) {
+      $analysisPanelContent.classList.add('collapsed')
+      $collapseIcon.textContent = '+'
+    }
   } else {
     $lowHandTrainingPanel.classList.remove('show')
   }
@@ -4933,10 +4960,14 @@ document.addEventListener('touchend', function () {
   isLowHandDragging = false
 })
 
-// Helper: Check if a rank is a low card (A, 2-8)
+// Helper: Check if a rank is a low card (A, 2-X based on user input)
 function isLowRank(rank) {
   // rank is 0-12 (A=0, 2=1, ..., K=12)
-  return rank === 0 || (rank >= 1 && rank <= 7)  // A, 2, 3, 4, 5, 6, 7, 8
+  var highestLow = getHighestLowCard()
+  // A is always low (rank 0), plus 2 through highestLow
+  // e.g., if highestLow=5, then ranks 0,1,2,3,4 are low (A,2,3,4,5)
+  // e.g., if highestLow=8, then ranks 0,1,2,3,4,5,6,7 are low (A,2,3,4,5,6,7,8)
+  return rank === 0 || (rank >= 1 && rank <= highestLow - 1)
 }
 
 // Get highest low card from input (default 8)
@@ -5013,23 +5044,31 @@ function generateLowBoard(targetLowCount) {
       selectedRanks.push(shuffledHigh[j])
     }
   } else if (targetLowCount === 3) {
-    // Exactly 3 unique low ranks
-    var shuffledLow3 = shuffleArray(lowRanks.slice())
+    // Exactly 3 unique low ranks - MUST include the highest low card
+    var mustHaveRank = highestLow - 1  // e.g., 7 if highestLow is 8
+    selectedRanks.push(mustHaveRank)
+
+    // Pick 2 more from remaining low ranks
+    var otherLowRanks = lowRanks.filter(function(r) { return r !== mustHaveRank })
+    var shuffledLow3 = shuffleArray(otherLowRanks.slice())
     selectedRanks.push(shuffledLow3[0])
     selectedRanks.push(shuffledLow3[1])
-    selectedRanks.push(shuffledLow3[2])
 
     // Fill rest with high ranks
     var shuffledHigh3 = shuffleArray(highRanks.slice())
     selectedRanks.push(shuffledHigh3[0])
     selectedRanks.push(shuffledHigh3[1])
   } else if (targetLowCount === 4) {
-    // Exactly 4 unique low ranks
-    var shuffledLow4 = shuffleArray(lowRanks.slice())
+    // Exactly 4 unique low ranks - MUST include the highest low card
+    var mustHaveRank4 = highestLow - 1  // e.g., 7 if highestLow is 8
+    selectedRanks.push(mustHaveRank4)
+
+    // Pick 3 more from remaining low ranks
+    var otherLowRanks4 = lowRanks.filter(function(r) { return r !== mustHaveRank4 })
+    var shuffledLow4 = shuffleArray(otherLowRanks4.slice())
     selectedRanks.push(shuffledLow4[0])
     selectedRanks.push(shuffledLow4[1])
     selectedRanks.push(shuffledLow4[2])
-    selectedRanks.push(shuffledLow4[3])
 
     // Fill rest with high ranks
     var shuffledHigh4 = shuffleArray(highRanks.slice())
@@ -5245,9 +5284,20 @@ function generate4Hands2Low() {
     var handCards = []
     var excluded = new Set()
 
-    // Pick 2 low cards
-    var shuffledLow = shuffleArray(availableLowRanks.slice())
-    for (var l = 0; l < 2 && l < shuffledLow.length; l++) {
+    // First, MUST include the highest low card (e.g., 7 if highestLow is 8)
+    // This ensures every generated hand has the maximum low point
+    var mustHaveRank = highestLow - 1
+    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
+    if (mustHaveCard !== -1) {
+      handCards.push(mustHaveCard)
+      excluded.add(mustHaveCard)
+      usedCards.add(mustHaveCard)
+    }
+
+    // Pick 1 more low card from available ranks (excluding the must-have rank)
+    var otherLowRanks = availableLowRanks.filter(function(r) { return r !== mustHaveRank })
+    var shuffledLow = shuffleArray(otherLowRanks.slice())
+    for (var l = 0; l < 1 && l < shuffledLow.length; l++) {
       var card = getRandomCard(shuffledLow[l], excluded)
       if (card !== -1) {
         handCards.push(card)
@@ -5338,17 +5388,18 @@ function generate4Hands1Live() {
     return -1
   }
 
-  // Generate 4 hands, each with the missing low rank
+  // Generate 4 hands, each with the missing low rank AND highest low card
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
 
-    // Add the 1 live card
-    var liveCard = getRandomCard(missingLowRank, excluded)
-    if (liveCard !== -1) {
-      handCards.push(liveCard)
-      excluded.add(liveCard)
-      usedCards.add(liveCard)
+    // MUST include the highest low card (e.g., 7 if highestLow is 8)
+    var mustHaveRank = highestLow - 1
+    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
+    if (mustHaveCard !== -1) {
+      handCards.push(mustHaveCard)
+      excluded.add(mustHaveCard)
+      usedCards.add(mustHaveCard)
     }
 
     // Fill with high cards
@@ -5433,20 +5484,21 @@ function generate4Hands2Live() {
     return -1
   }
 
-  // Generate 4 hands, each with missing rank + one board low rank
+  // Generate 4 hands, each with highest low card + one board low rank
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
 
-    // Add the missing low rank (live card 1)
-    var liveCard1 = getRandomCard(missingLowRank, excluded)
-    if (liveCard1 !== -1) {
-      handCards.push(liveCard1)
-      excluded.add(liveCard1)
-      usedCards.add(liveCard1)
+    // MUST include the highest low card (e.g., 7 if highestLow is 8)
+    var mustHaveRank = highestLow - 1
+    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
+    if (mustHaveCard !== -1) {
+      handCards.push(mustHaveCard)
+      excluded.add(mustHaveCard)
+      usedCards.add(mustHaveCard)
     }
 
-    // Add one of the board low ranks (live card 2)
+    // Add one of the board low ranks (second low card)
     var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
     var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
     if (liveCard2 !== -1) {
@@ -5541,23 +5593,17 @@ function generate4HandsMixed() {
     var handCards = []
     var excluded = new Set()
 
-    if (type === 1) {
-      // 1-live: just missing rank
-      var liveCard = getRandomCard(missingLowRank, excluded)
-      if (liveCard !== -1) {
-        handCards.push(liveCard)
-        excluded.add(liveCard)
-        usedCards.add(liveCard)
-      }
-    } else {
-      // 2-live: missing rank + one board low rank
-      var liveCard1 = getRandomCard(missingLowRank, excluded)
-      if (liveCard1 !== -1) {
-        handCards.push(liveCard1)
-        excluded.add(liveCard1)
-        usedCards.add(liveCard1)
-      }
+    // ALWAYS include the highest low card first
+    var mustHaveRank = highestLow - 1
+    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
+    if (mustHaveCard !== -1) {
+      handCards.push(mustHaveCard)
+      excluded.add(mustHaveCard)
+      usedCards.add(mustHaveCard)
+    }
 
+    if (type === 2) {
+      // 2-live: highest low card + one board low rank
       var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
       var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
       if (liveCard2 !== -1) {
@@ -5566,6 +5612,7 @@ function generate4HandsMixed() {
         usedCards.add(liveCard2)
       }
     }
+    // type === 1: only highest low card (1-live)
 
     // Fill with high cards
     while (handCards.length < cardCount) {
