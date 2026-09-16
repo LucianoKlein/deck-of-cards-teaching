@@ -5450,12 +5450,16 @@ function generate4Hands2Live() {
     allLowRanks.push(i)
   }
 
-  // Get the missing low rank
-  var missingLowRank = allLowRanks.find(function(r) {
-    return boardLowRanks.indexOf(r) === -1
-  })
+  // Get ALL missing low ranks (not just one!)
+  var missingLowRanks = []
+  for (var i = 0; i < allLowRanks.length; i++) {
+    if (boardLowRanks.indexOf(allLowRanks[i]) === -1) {
+      missingLowRanks.push(allLowRanks[i])
+    }
+  }
 
-  if (missingLowRank === undefined) return
+  // Need at least 2 missing low ranks to generate 2 live cards
+  if (missingLowRanks.length < 2) return
 
   var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
   var usedCards = new Set(lastGeneratedBoard)
@@ -5500,24 +5504,26 @@ function generate4Hands2Live() {
     return -1
   }
 
-  // Generate 4 hands, each with highest low card + one board low rank
+  // Generate 4 hands, each with 2 different live low cards
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
 
-    // MUST include the highest low card (e.g., 7 if highestLow is 8)
-    var mustHaveRank = highestLow - 1
-    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
-    if (mustHaveCard !== -1) {
-      handCards.push(mustHaveCard)
-      excluded.add(mustHaveCard)
-      usedCards.add(mustHaveCard)
+    // Pick 2 random missing low ranks for this hand
+    var shuffledMissing = shuffleArray(missingLowRanks.slice())
+    var liveRank1 = shuffledMissing[0]
+    var liveRank2 = shuffledMissing[1]
+
+    // Add first live card
+    var liveCard1 = getRandomCard(liveRank1, excluded)
+    if (liveCard1 !== -1) {
+      handCards.push(liveCard1)
+      excluded.add(liveCard1)
+      usedCards.add(liveCard1)
     }
 
-    // Add one of the board low ranks (second low card)
-    // WRONG: should NOT use boardLowRanks - those are dead cards!
-    // CORRECT: use missingLowRank - the low rank NOT on board
-    var liveCard2 = getRandomCard(missingLowRank, excluded)
+    // Add second live card
+    var liveCard2 = getRandomCard(liveRank2, excluded)
     if (liveCard2 !== -1) {
       handCards.push(liveCard2)
       excluded.add(liveCard2)
