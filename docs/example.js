@@ -5546,21 +5546,32 @@ function generate4Hands1Live() {
     return -1
   }
 
-  // Generate 4 hands, each with the missing low rank AND highest low card
+  // Generate 4 hands, each with:
+  // - 1 low card that is ON the board (duplicate/overlapping)
+  // - 1 low card that is NOT on the board (the "live" card)
+  // - Rest are high cards
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
 
-    // MUST include the highest low card (e.g., 7 if highestLow is 8)
-    var mustHaveRank = highestLow - 1
-    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
-    if (mustHaveCard !== -1) {
-      handCards.push(mustHaveCard)
-      excluded.add(mustHaveCard)
-      usedCards.add(mustHaveCard)
+    // 1. Pick one low rank that IS on the board (duplicate)
+    var duplicateLowRank = boardLowRanks[Math.floor(Math.random() * boardLowRanks.length)]
+    var duplicateCard = getRandomCard(duplicateLowRank, excluded)
+    if (duplicateCard !== -1) {
+      handCards.push(duplicateCard)
+      excluded.add(duplicateCard)
+      usedCards.add(duplicateCard)
     }
 
-    // Fill with high cards
+    // 2. Pick the missing low rank (the "live" card NOT on board)
+    var liveCard = getRandomCard(missingLowRank, excluded)
+    if (liveCard !== -1) {
+      handCards.push(liveCard)
+      excluded.add(liveCard)
+      usedCards.add(liveCard)
+    }
+
+    // 3. Fill with high cards
     while (handCards.length < cardCount) {
       var highCard = getRandomHighCard(excluded)
       if (highCard !== -1) {
@@ -5662,7 +5673,7 @@ function generate4Hands2Live() {
   // Shuffle combinations to get random variety
   shuffleArray(allCombinations)
 
-  // Generate 4 hands, each with a different combination of 2 live low cards
+  // Generate 4 hands, each with 2 live cards (2 low ranks NOT on board)
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
@@ -5672,7 +5683,7 @@ function generate4Hands2Live() {
     var liveRank1 = allCombinations[combIndex][0]
     var liveRank2 = allCombinations[combIndex][1]
 
-    // Add first live card
+    // Add first live card (NOT on board)
     var liveCard1 = getRandomCard(liveRank1, excluded)
     if (liveCard1 !== -1) {
       handCards.push(liveCard1)
@@ -5680,7 +5691,7 @@ function generate4Hands2Live() {
       usedCards.add(liveCard1)
     }
 
-    // Add second live card
+    // Add second live card (NOT on board)
     var liveCard2 = getRandomCard(liveRank2, excluded)
     if (liveCard2 !== -1) {
       handCards.push(liveCard2)
