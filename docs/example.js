@@ -5891,21 +5891,17 @@ function generate4HandsMixed() {
   }
 
   // Determine hand types: at least 1 hand with 1-live, at least 1 hand with 2-live
-  // Other 2 hands are random (can be 0-live, 1-live, or 2-live)
+  // Other 2 hands are random (only 1-live or 2-live, NO 0-live)
   var handTypes = [1, 2] // guarantee at least one 1-live and one 2-live
 
-  // For remaining 2 hands, randomly pick type
-  // 0-live = only board low ranks (no live cards)
-  // 1-live = 1 live rank
-  // 2-live = 2 live ranks (if available)
+  // For remaining 2 hands, randomly pick between 1-live or 2-live
   for (var i = 0; i < 2; i++) {
-    var rand = Math.random()
-    if (rand < 0.33) {
-      handTypes.push(0) // 0-live (only duplicate ranks)
-    } else if (rand < 0.67) {
-      handTypes.push(1) // 1-live
+    if (missingLowRanks.length >= 2) {
+      // Can do 2-live, randomly choose between 1-live or 2-live
+      handTypes.push(Math.random() < 0.5 ? 1 : 2)
     } else {
-      handTypes.push(missingLowRanks.length >= 2 ? 2 : 1) // 2-live if possible
+      // Can only do 1-live
+      handTypes.push(1)
     }
   }
 
@@ -5914,55 +5910,7 @@ function generate4HandsMixed() {
 
   // Generate 4 hands
   for (var h = 1; h <= 4; h++) {
-    var handCards
-    var handType = handTypes[h - 1]
-
-    if (handType === 0) {
-      // 0-live: only board low ranks + high cards (no live cards)
-      handCards = []
-      var excluded = new Set()
-
-      // Add at least 2 board low cards
-      var shuffledBoardRanks = shuffleArray(boardLowRanks.slice())
-      var lowCount = 0
-      for (var i = 0; i < shuffledBoardRanks.length && lowCount < 2; i++) {
-        var lowCard = getRandomCard(shuffledBoardRanks[i], excluded)
-        if (lowCard !== -1) {
-          handCards.push(lowCard)
-          excluded.add(lowCard)
-          usedCards.add(lowCard)
-          lowCount++
-        }
-      }
-
-      // Fill with random mix of board low + high
-      var poolRanks = boardLowRanks.slice()
-      for (var r = 8; r <= 12; r++) {
-        poolRanks.push(r)
-      }
-
-      while (handCards.length < cardCount) {
-        var randomRank = poolRanks[Math.floor(Math.random() * poolRanks.length)]
-        var card = getRandomCard(randomRank, excluded)
-        if (card !== -1) {
-          handCards.push(card)
-          excluded.add(card)
-          usedCards.add(card)
-        } else {
-          var anyCard = getRandomHighCard(excluded)
-          if (anyCard !== -1) {
-            handCards.push(anyCard)
-            excluded.add(anyCard)
-            usedCards.add(anyCard)
-          } else {
-            break
-          }
-        }
-      }
-    } else {
-      // 1-live or 2-live
-      handCards = generateHandWithLiveCount(handType)
-    }
+    var handCards = generateHandWithLiveCount(handTypes[h - 1])
 
     // Set hand input
     var handInput = document.getElementById('hand' + h + 'Input')
