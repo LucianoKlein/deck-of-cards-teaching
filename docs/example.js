@@ -5767,7 +5767,6 @@ function generate4HandsMixed() {
   // ✅ 先收回所有手牌
   collectAllHands()
 
-  // Generate: 1 hand with 1-live, 1 hand with 2-live, 2 random (1 or 2-live)
   var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
   var highestLow = getHighestLowCard()
   var allLowRanks = []
@@ -5775,11 +5774,15 @@ function generate4HandsMixed() {
     allLowRanks.push(i)
   }
 
-  var missingLowRank = allLowRanks.find(function(r) {
-    return boardLowRanks.indexOf(r) === -1
-  })
+  // Get ALL missing low ranks
+  var missingLowRanks = []
+  for (var i = 0; i < allLowRanks.length; i++) {
+    if (boardLowRanks.indexOf(allLowRanks[i]) === -1) {
+      missingLowRanks.push(allLowRanks[i])
+    }
+  }
 
-  if (missingLowRank === undefined) return
+  if (missingLowRanks.length === 0) return
 
   var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
   var usedCards = new Set(lastGeneratedBoard)
@@ -5805,8 +5808,6 @@ function generate4HandsMixed() {
 
   function getRandomHighCard(excluded) {
     var highRanks = []
-    // High cards must be > 8 (rank >= 8), not just > user's highestLow
-    // This ensures 6, 7, 8 won't appear when they are still low cards
     for (var r = 8; r <= 12; r++) {
       highRanks.push(r)
     }
@@ -5824,52 +5825,144 @@ function generate4HandsMixed() {
     return -1
   }
 
-  function generateHand(type) {
+  // Generate hand with specified number of live ranks
+  function generateHandWithLiveCount(liveCount) {
     var handCards = []
     var excluded = new Set()
 
-    // ALWAYS include the highest low card first
-    var mustHaveRank = highestLow - 1
-    var mustHaveCard = getRandomCard(mustHaveRank, excluded)
-    if (mustHaveCard !== -1) {
-      handCards.push(mustHaveCard)
-      excluded.add(mustHaveCard)
-      usedCards.add(mustHaveCard)
-    }
+    // Pick live ranks for this hand
+    var shuffledMissingRanks = shuffleArray(missingLowRanks.slice())
+    var handLiveRanks = shuffledMissingRanks.slice(0, liveCount)
 
-    if (type === 2) {
-      // 2-live: highest low card + one board low rank
-      var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
-      var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
-      if (liveCard2 !== -1) {
-        handCards.push(liveCard2)
-        excluded.add(liveCard2)
-        usedCards.add(liveCard2)
+    // Add at least one card of each live rank
+    for (var i = 0; i < handLiveRanks.length; i++) {
+      var liveCard = getRandomCard(handLiveRanks[i], excluded)
+      if (liveCard !== -1) {
+        handCards.push(liveCard)
+        excluded.add(liveCard)
+        usedCards.add(liveCard)
       }
     }
-    // type === 1: only highest low card (1-live)
 
-    // Fill with high cards
+    // For 1-live: must also add at least one duplicate card (from board low ranks)
+    if (liveCount === 1 && boardLowRanks.length > 0) {
+      var shuffledBoardRanks = shuffleArray(boardLowRanks.slice())
+      for (var i = 0; i < shuffledBoardRanks.length; i++) {
+        var duplicateCard = getRandomCard(shuffledBoardRanks[i], excluded)
+        if (duplicateCard !== -1) {
+          handCards.push(duplicateCard)
+          excluded.add(duplicateCard)
+          usedCards.add(duplicateCard)
+          break
+        }
+      }
+    }
+
+    // Build pool of available ranks: board low ranks + live ranks + high ranks
+    var availableRanks = boardLowRanks.slice()
+    for (var i = 0; i < handLiveRanks.length; i++) {
+      availableRanks.push(handLiveRanks[i])
+    }
+    for (var r = 8; r <= 12; r++) {
+      availableRanks.push(r)
+    }
+
+    // Fill remaining slots randomly
     while (handCards.length < cardCount) {
-      var highCard = getRandomHighCard(excluded)
-      if (highCard !== -1) {
-        handCards.push(highCard)
-        excluded.add(highCard)
-        usedCards.add(highCard)
+      var randomRank = availableRanks[Math.floor(Math.random() * availableRanks.length)]
+      var card = getRandomCard(randomRank, excluded)
+      if (card !== -1) {
+        handCards.push(card)
+        excluded.add(card)
+        usedCards.add(card)
       } else {
-        break
+        var anyCard = getRandomHighCard(excluded)
+        if (anyCard !== -1) {
+          handCards.push(anyCard)
+          excluded.add(anyCard)
+          usedCards.add(anyCard)
+        } else {
+          break
+        }
       }
     }
 
     return handCards
   }
 
-  // Generate hands: 1-live, 2-live, random, random
-  var types = [1, 2, Math.random() < 0.5 ? 1 : 2, Math.random() < 0.5 ? 1 : 2]
-  shuffleArray(types)
+  // Determine hand types: at least 1 hand with 1-live, at least 1 hand with 2-live
+  // Other 2 hands are random (can be 0-live, 1-live, or 2-live)
+  var handTypes = [1, 2] // guarantee at least one 1-live and one 2-live
 
+  // For remaining 2 hands, randomly pick type
+  // 0-live = only board low ranks (no live cards)
+  // 1-live = 1 live rank
+  // 2-live = 2 live ranks (if available)
+  for (var i = 0; i < 2; i++) {
+    var rand = Math.random()
+    if (rand < 0.33) {
+      handTypes.push(0) // 0-live (only duplicate ranks)
+    } else if (rand < 0.67) {
+      handTypes.push(1) // 1-live
+    } else {
+      handTypes.push(missingLowRanks.length >= 2 ? 2 : 1) // 2-live if possible
+    }
+  }
+
+  // Shuffle hand types so they appear in random order
+  shuffleArray(handTypes)
+
+  // Generate 4 hands
   for (var h = 1; h <= 4; h++) {
-    var handCards = generateHand(types[h - 1])
+    var handCards
+    var handType = handTypes[h - 1]
+
+    if (handType === 0) {
+      // 0-live: only board low ranks + high cards (no live cards)
+      handCards = []
+      var excluded = new Set()
+
+      // Add at least 2 board low cards
+      var shuffledBoardRanks = shuffleArray(boardLowRanks.slice())
+      var lowCount = 0
+      for (var i = 0; i < shuffledBoardRanks.length && lowCount < 2; i++) {
+        var lowCard = getRandomCard(shuffledBoardRanks[i], excluded)
+        if (lowCard !== -1) {
+          handCards.push(lowCard)
+          excluded.add(lowCard)
+          usedCards.add(lowCard)
+          lowCount++
+        }
+      }
+
+      // Fill with random mix of board low + high
+      var poolRanks = boardLowRanks.slice()
+      for (var r = 8; r <= 12; r++) {
+        poolRanks.push(r)
+      }
+
+      while (handCards.length < cardCount) {
+        var randomRank = poolRanks[Math.floor(Math.random() * poolRanks.length)]
+        var card = getRandomCard(randomRank, excluded)
+        if (card !== -1) {
+          handCards.push(card)
+          excluded.add(card)
+          usedCards.add(card)
+        } else {
+          var anyCard = getRandomHighCard(excluded)
+          if (anyCard !== -1) {
+            handCards.push(anyCard)
+            excluded.add(anyCard)
+            usedCards.add(anyCard)
+          } else {
+            break
+          }
+        }
+      }
+    } else {
+      // 1-live or 2-live
+      handCards = generateHandWithLiveCount(handType)
+    }
 
     // Set hand input
     var handInput = document.getElementById('hand' + h + 'Input')
