@@ -5012,11 +5012,13 @@ function generateLowBoard(targetLowCount) {
   var highestLow = getHighestLowCard()
   var lowRanks = []
   for (var i = 0; i <= highestLow - 1; i++) {
-    lowRanks.push(i)  // A=0, 2=1, ..., 8=7
+    lowRanks.push(i)  // A=0, 2=1, ..., based on user input
   }
   var highRanks = []
-  for (var j = highestLow; j <= 12; j++) {
-    highRanks.push(j)  // 9=8, T=9, ..., K=12
+  // High ranks start from 9 (rank 8), not from user's highestLow
+  // This ensures 6, 7, 8 won't appear when user sets max low to 5
+  for (var j = 8; j <= 12; j++) {
+    highRanks.push(j)  // 9=8, T=9, J=10, Q=11, K=12
   }
 
   function shuffleArray(arr) {
