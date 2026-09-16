@@ -5272,7 +5272,9 @@ function generate4Hands2Low() {
 
   function getRandomHighCard(excluded) {
     var highRanks = []
-    for (var r = highestLow; r <= 12; r++) {
+    // High cards must be > 8 (rank >= 8), not just > user's highestLow
+    // This ensures 6, 7, 8 won't appear when they are still low cards
+    for (var r = 8; r <= 12; r++) {
       highRanks.push(r)
     }
     shuffleArray(highRanks)
@@ -5381,7 +5383,9 @@ function generate4Hands1Live() {
 
   function getRandomHighCard(excluded) {
     var highRanks = []
-    for (var r = highestLow; r <= 12; r++) {
+    // High cards must be > 8 (rank >= 8), not just > user's highestLow
+    // This ensures 6, 7, 8 won't appear when they are still low cards
+    for (var r = 8; r <= 12; r++) {
       highRanks.push(r)
     }
     shuffleArray(highRanks)
@@ -5477,7 +5481,9 @@ function generate4Hands2Live() {
 
   function getRandomHighCard(excluded) {
     var highRanks = []
-    for (var r = highestLow; r <= 12; r++) {
+    // High cards must be > 8 (rank >= 8), not just > user's highestLow
+    // This ensures 6, 7, 8 won't appear when they are still low cards
+    for (var r = 8; r <= 12; r++) {
       highRanks.push(r)
     }
     shuffleArray(highRanks)
@@ -5509,8 +5515,9 @@ function generate4Hands2Live() {
     }
 
     // Add one of the board low ranks (second low card)
-    var shuffledBoardLow = shuffleArray(boardLowRanks.slice())
-    var liveCard2 = getRandomCard(shuffledBoardLow[0], excluded)
+    // WRONG: should NOT use boardLowRanks - those are dead cards!
+    // CORRECT: use missingLowRank - the low rank NOT on board
+    var liveCard2 = getRandomCard(missingLowRank, excluded)
     if (liveCard2 !== -1) {
       handCards.push(liveCard2)
       excluded.add(liveCard2)
@@ -5582,7 +5589,9 @@ function generate4HandsMixed() {
 
   function getRandomHighCard(excluded) {
     var highRanks = []
-    for (var r = highestLow; r <= 12; r++) {
+    // High cards must be > 8 (rank >= 8), not just > user's highestLow
+    // This ensures 6, 7, 8 won't appear when they are still low cards
+    for (var r = 8; r <= 12; r++) {
       highRanks.push(r)
     }
     shuffleArray(highRanks)
