@@ -5555,76 +5555,64 @@ function generate4Hands1Live() {
   // - Other low cards can be duplicate ranks (on board) or more cards of the live rank
   // Example: board "8 7 6 1 7", hand "8 5 8 5" is valid (live rank = 5, duplicate rank = 8)
   // Each hand randomly picks one live rank from all missing low ranks
-  // IMPORTANT: Hand must have at least 2 low cards (Omaha rule: must use exactly 2 from hand)
+  // Definition: must have at least 1 live card + at least 1 duplicate card
+  // Other 2 cards can be anything (high, more live, more duplicate)
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
-    var lowCardCount = 0
     var hasLiveCard = false
+    var hasDuplicateCard = false
 
     // Randomly pick ONE live rank for this hand from all missing low ranks
     var handLiveRank = missingLowRanks[Math.floor(Math.random() * missingLowRanks.length)]
 
-    // Build a pool of allowed ranks: board low ranks + this hand's live rank
-    var allowedLowRanks = boardLowRanks.slice() // copy board ranks
-    allowedLowRanks.push(handLiveRank) // add this hand's live rank
+    // Step 1: Add at least 1 live card
+    var liveCard = getRandomCard(handLiveRank, excluded)
+    if (liveCard !== -1) {
+      handCards.push(liveCard)
+      excluded.add(liveCard)
+      usedCards.add(liveCard)
+      hasLiveCard = true
+    }
 
-    // Fill hand with random cards from allowed ranks and high cards
-    // Strategy: ensure at least 2 low cards total, with at least 1 being live
-    while (handCards.length < cardCount) {
-      var cardType = Math.random()
-
-      // Prioritize low cards when we don't have 2 yet
-      if (lowCardCount < 2 || (handCards.length < cardCount - 1 && cardType < 0.6)) {
-        // Try to add a low card (60% chance, or 100% if we need to reach 2 low cards)
-        var randomRank = allowedLowRanks[Math.floor(Math.random() * allowedLowRanks.length)]
-        var card = getRandomCard(randomRank, excluded)
-        if (card !== -1) {
-          handCards.push(card)
-          excluded.add(card)
-          usedCards.add(card)
-          lowCardCount++
-          if (randomRank === handLiveRank) hasLiveCard = true
-        } else {
-          // If can't get low card, try high card (but only if we already have 2 low cards)
-          if (lowCardCount >= 2) {
-            var highCard = getRandomHighCard(excluded)
-            if (highCard !== -1) {
-              handCards.push(highCard)
-              excluded.add(highCard)
-              usedCards.add(highCard)
-            }
-          }
-        }
-      } else {
-        // Try to add a high card (40% chance or when near full)
-        var highCard = getRandomHighCard(excluded)
-        if (highCard !== -1) {
-          handCards.push(highCard)
-          excluded.add(highCard)
-          usedCards.add(highCard)
-        } else {
-          break
-        }
+    // Step 2: Add at least 1 duplicate card (from board low ranks)
+    if (boardLowRanks.length > 0) {
+      var duplicateRank = boardLowRanks[Math.floor(Math.random() * boardLowRanks.length)]
+      var duplicateCard = getRandomCard(duplicateRank, excluded)
+      if (duplicateCard !== -1) {
+        handCards.push(duplicateCard)
+        excluded.add(duplicateCard)
+        usedCards.add(duplicateCard)
+        hasDuplicateCard = true
       }
     }
 
-    // Ensure we have at least 1 live card - if not, replace a card with live
-    if (!hasLiveCard && handCards.length > 0) {
-      // Replace last card with a live card
-      var lastCard = handCards.pop()
-      usedCards.delete(lastCard)
-      excluded.delete(lastCard)
-      var liveCard = getRandomCard(handLiveRank, excluded)
-      if (liveCard !== -1) {
-        handCards.push(liveCard)
-        excluded.add(liveCard)
-        usedCards.add(liveCard)
-        hasLiveCard = true
+    // Step 3: Fill remaining slots with random cards (can be live, duplicate, or high)
+    // Build a pool: board low ranks + live rank + high ranks
+    var allAvailableRanks = boardLowRanks.slice()
+    allAvailableRanks.push(handLiveRank)
+    // Add some high ranks to the pool
+    for (var r = 8; r <= 12; r++) {
+      allAvailableRanks.push(r)
+    }
+
+    while (handCards.length < cardCount) {
+      var randomRank = allAvailableRanks[Math.floor(Math.random() * allAvailableRanks.length)]
+      var card = getRandomCard(randomRank, excluded)
+      if (card !== -1) {
+        handCards.push(card)
+        excluded.add(card)
+        usedCards.add(card)
       } else {
-        // Restore if we can't get live card
-        handCards.push(lastCard)
-        usedCards.add(lastCard)
+        // If can't get card of that rank, try any available card
+        var anyCard = getRandomHighCard(excluded)
+        if (anyCard !== -1) {
+          handCards.push(anyCard)
+          excluded.add(anyCard)
+          usedCards.add(anyCard)
+        } else {
+          break
+        }
       }
     }
 
