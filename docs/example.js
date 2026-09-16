@@ -5575,15 +5575,20 @@ function generate4Hands1Live() {
       hasLiveCard = true
     }
 
-    // Step 2: Add at least 1 duplicate card (from board low ranks)
+    // Step 2: Add at least 1 duplicate card (from board low ranks ONLY)
+    // Try each board low rank until we successfully add one
     if (boardLowRanks.length > 0) {
-      var duplicateRank = boardLowRanks[Math.floor(Math.random() * boardLowRanks.length)]
-      var duplicateCard = getRandomCard(duplicateRank, excluded)
-      if (duplicateCard !== -1) {
-        handCards.push(duplicateCard)
-        excluded.add(duplicateCard)
-        usedCards.add(duplicateCard)
-        hasDuplicateCard = true
+      var shuffledBoardRanks = shuffleArray(boardLowRanks.slice())
+      for (var i = 0; i < shuffledBoardRanks.length; i++) {
+        var duplicateRank = shuffledBoardRanks[i]
+        var duplicateCard = getRandomCard(duplicateRank, excluded)
+        if (duplicateCard !== -1) {
+          handCards.push(duplicateCard)
+          excluded.add(duplicateCard)
+          usedCards.add(duplicateCard)
+          hasDuplicateCard = true
+          break
+        }
       }
     }
 
