@@ -5072,10 +5072,18 @@ function generateLowBoard(targetLowCount) {
     selectedRanks.push(shuffledLow4[1])
     selectedRanks.push(shuffledLow4[2])
 
-    // Fill rest with high ranks
-    var shuffledHigh4 = shuffleArray(highRanks.slice())
-    if (shuffledHigh4.length > 0) {
-      selectedRanks.push(shuffledHigh4[0])
+    // 50% chance: duplicate one of the low ranks (teaching scenario)
+    // or fill with high rank (traditional scenario)
+    if (Math.random() < 0.5) {
+      // Duplicate one of the 4 low ranks to make 5 cards
+      var randomLowIndex = Math.floor(Math.random() * selectedRanks.length)
+      selectedRanks.push(selectedRanks[randomLowIndex])
+    } else {
+      // Fill with high rank
+      var shuffledHigh4 = shuffleArray(highRanks.slice())
+      if (shuffledHigh4.length > 0) {
+        selectedRanks.push(shuffledHigh4[0])
+      }
     }
   } else if (targetLowCount === 5) {
     // Exactly 5 unique low ranks
