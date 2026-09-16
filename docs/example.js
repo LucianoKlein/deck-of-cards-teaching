@@ -688,6 +688,73 @@ function rollHand(handKey, inputElement) {
   })
 }
 
+// Helper function to collect all hands back to deck (keeps board)
+function collectAllHands() {
+  var hasCards = false
+  for (var key in handCards) {
+    if (handCards[key].length > 0) {
+      hasCards = true
+      break
+    }
+  }
+
+  if (!hasCards) return
+
+  deck.queue(function (next) {
+    var allCards = []
+    for (var key in handCards) {
+      allCards = allCards.concat(handCards[key])
+      handCards[key] = []
+    }
+
+    allCards.forEach(function (card, i) {
+      card.animateTo({
+        delay: i * 15,
+        duration: 200,
+        x: 0,
+        y: 0,
+        rot: 0,
+        onStart: function () {
+          card.setSide('back')
+          card.$el.style.zIndex = ''
+        },
+        onComplete: function () {
+          if (i === allCards.length - 1) {
+            next()
+          }
+        }
+      })
+    })
+  })
+}
+
+// Helper function to flip all hands at once
+function flipAllHands() {
+  var allCards = []
+  for (var key in handCards) {
+    allCards = allCards.concat(handCards[key])
+  }
+
+  if (allCards.length === 0) return
+
+  // Determine target side: if all cards are 'back', flip to 'front'; otherwise flip to 'back'
+  var allBack = allCards.every(function(card) {
+    return card.side === 'back'
+  })
+  var targetSide = allBack ? 'front' : 'back'
+
+  deck.queue(function (next) {
+    allCards.forEach(function (card, i) {
+      setTimeout(function () {
+        card.setSide(targetSide)
+      }, i * 30)
+    })
+    setTimeout(function() {
+      next()
+    }, allCards.length * 30 + 100)
+  })
+}
+
 function showHandByIndices(handKey, cardIndices) {
   if (cardIndices.length === 0) return
 
@@ -5129,6 +5196,73 @@ function generateLowBoard(targetLowCount) {
   return cardIndices
 }
 
+// ✅ Collect all hands back to deck (keep board intact)
+function collectAllHands() {
+  var handsToCollect = []
+
+  // Collect all cards that are NOT board cards
+  deck.cards.forEach(function (card) {
+    if (!card.isBoardCard && (card.x !== 0 || card.y !== 0)) {
+      handsToCollect.push(card)
+    }
+  })
+
+  if (handsToCollect.length === 0) return
+
+  deck.queue(function (next) {
+    var completed = 0
+    handsToCollect.forEach(function (card, i) {
+      card.animateTo({
+        delay: i * 30,
+        duration: 200,
+        x: 0,
+        y: 0,
+        rot: 0,
+        onStart: function () {
+          card.setSide('back')
+          card.$el.style.zIndex = ''
+        },
+        onComplete: function () {
+          completed++
+          if (completed === handsToCollect.length) next()
+        }
+      })
+    })
+  })
+}
+
+// ✅ Flip all hands (toggle between face up and face down)
+function flipAllHands() {
+  var handCards = []
+
+  // Collect all cards that are NOT board cards
+  deck.cards.forEach(function (card) {
+    if (!card.isBoardCard && (card.x !== 0 || card.y !== 0)) {
+      handCards.push(card)
+    }
+  })
+
+  if (handCards.length === 0) return
+
+  // Check current state of first hand card to determine flip direction
+  var targetSide = handCards[0].side === 'front' ? 'back' : 'front'
+
+  deck.queue(function (next) {
+    var completed = 0
+    handCards.forEach(function (card, i) {
+      card.animateTo({
+        delay: i * 30,
+        duration: 200,
+        onComplete: function () {
+          card.setSide(targetSide)
+          completed++
+          if (completed === handCards.length) next()
+        }
+      })
+    })
+  })
+}
+
 // Deal a generated low board
 function dealLowBoard(cardIndices, lowCount) {
   clearWinnerHighlights()
@@ -5143,6 +5277,7 @@ function dealLowBoard(cardIndices, lowCount) {
   var gen1LiveBtn = document.getElementById('lowGen1LiveBtn')
   var gen2LiveBtn = document.getElementById('lowGen2LiveBtn')
   var genMixedBtn = document.getElementById('lowGenMixedBtn')
+  var flipAllHandsBtn = document.getElementById('flipAllHandsBtn')
 
   if (lowCount === 3) {
     presetsRow.style.display = 'flex'
@@ -5150,14 +5285,17 @@ function dealLowBoard(cardIndices, lowCount) {
     gen1LiveBtn.style.display = 'none'
     gen2LiveBtn.style.display = 'none'
     genMixedBtn.style.display = 'none'
+    flipAllHandsBtn.style.display = 'block'
   } else if (lowCount === 4) {
     presetsRow.style.display = 'flex'
     gen3HandsBtn.style.display = 'none'
     gen1LiveBtn.style.display = 'block'
     gen2LiveBtn.style.display = 'block'
     genMixedBtn.style.display = 'block'
+    flipAllHandsBtn.style.display = 'block'
   } else {
     presetsRow.style.display = 'none'
+    flipAllHandsBtn.style.display = 'none'
   }
 
   // Recycle old board
@@ -5235,6 +5373,9 @@ $lowGen5Btn.addEventListener('click', function () {
 // Helper function to generate hands with 2 low cards (for 3-low board)
 function generate4Hands2Low() {
   if (!lastGeneratedBoard || lastBoardLowCount !== 3) return
+
+  // ✅ 先收回所有手牌
+  collectAllHands()
 
   var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
   var highestLow = getHighestLowCard()
@@ -5345,6 +5486,9 @@ function generate4Hands2Low() {
 function generate4Hands1Live() {
   if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
 
+  // ✅ 先收回所有手牌
+  collectAllHands()
+
   var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
   var highestLow = getHighestLowCard()
   var allLowRanks = []
@@ -5442,6 +5586,9 @@ function generate4Hands1Live() {
 // Helper function to generate 4 hands with 2 live cards
 function generate4Hands2Live() {
   if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
+
+  // ✅ 先收回所有手牌
+  collectAllHands()
 
   var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
   var highestLow = getHighestLowCard()
@@ -5568,6 +5715,9 @@ function generate4Hands2Live() {
 function generate4HandsMixed() {
   if (!lastGeneratedBoard || lastBoardLowCount !== 4) return
 
+  // ✅ 先收回所有手牌
+  collectAllHands()
+
   // Generate: 1 hand with 1-live, 1 hand with 2-live, 2 random (1 or 2-live)
   var boardLowRanks = getBoardLowRanks(lastGeneratedBoard)
   var highestLow = getHighestLowCard()
@@ -5688,6 +5838,7 @@ document.getElementById('lowGen3HandsBtn').addEventListener('click', generate4Ha
 document.getElementById('lowGen1LiveBtn').addEventListener('click', generate4Hands1Live)
 document.getElementById('lowGen2LiveBtn').addEventListener('click', generate4Hands2Live)
 document.getElementById('lowGenMixedBtn').addEventListener('click', generate4HandsMixed)
+document.getElementById('flipAllHandsBtn').addEventListener('click', flipAllHands)
 
 // Submit Low Button - Evaluate low hands only
 $submitLowBtn.addEventListener('click', function () {
