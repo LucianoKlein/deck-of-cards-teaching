@@ -5496,12 +5496,15 @@ function generate4Hands1Live() {
     allLowRanks.push(i)
   }
 
-  // Get missing low rank (the 1 live card)
-  var missingLowRank = allLowRanks.find(function(r) {
-    return boardLowRanks.indexOf(r) === -1
-  })
+  // Get ALL missing low ranks (for random selection per hand)
+  var missingLowRanks = []
+  for (var i = 0; i < allLowRanks.length; i++) {
+    if (boardLowRanks.indexOf(allLowRanks[i]) === -1) {
+      missingLowRanks.push(allLowRanks[i])
+    }
+  }
 
-  if (missingLowRank === undefined) return
+  if (missingLowRanks.length === 0) return
 
   var cardCount = document.querySelector('input[name="lowHandMode"]:checked').value === 'bigo' ? 5 : 4
   var usedCards = new Set(lastGeneratedBoard)
@@ -5551,14 +5554,18 @@ function generate4Hands1Live() {
   // - At least one low card's rank is the live rank (NOT on board)
   // - Other low cards can be duplicate ranks (on board) or more cards of the live rank
   // Example: board "8 7 6 1 7", hand "8 5 8 5" is valid (live rank = 5, duplicate rank = 8)
+  // Each hand randomly picks one live rank from all missing low ranks
   for (var h = 1; h <= 4; h++) {
     var handCards = []
     var excluded = new Set()
     var hasLiveCard = false
 
-    // Build a pool of allowed ranks: board low ranks + the one live rank
+    // Randomly pick ONE live rank for this hand from all missing low ranks
+    var handLiveRank = missingLowRanks[Math.floor(Math.random() * missingLowRanks.length)]
+
+    // Build a pool of allowed ranks: board low ranks + this hand's live rank
     var allowedLowRanks = boardLowRanks.slice() // copy board ranks
-    allowedLowRanks.push(missingLowRank) // add the live rank
+    allowedLowRanks.push(handLiveRank) // add this hand's live rank
 
     // Fill hand with random cards from allowed ranks and high cards
     // Strategy: ensure at least 1 live card
@@ -5573,7 +5580,7 @@ function generate4Hands1Live() {
           handCards.push(card)
           excluded.add(card)
           usedCards.add(card)
-          if (randomRank === missingLowRank) hasLiveCard = true
+          if (randomRank === handLiveRank) hasLiveCard = true
         } else {
           // If can't get low card, try high card
           var highCard = getRandomHighCard(excluded)
@@ -5602,7 +5609,7 @@ function generate4Hands1Live() {
       var lastCard = handCards.pop()
       usedCards.delete(lastCard)
       excluded.delete(lastCard)
-      var liveCard = getRandomCard(missingLowRank, excluded)
+      var liveCard = getRandomCard(handLiveRank, excluded)
       if (liveCard !== -1) {
         handCards.push(liveCard)
         excluded.add(liveCard)
